@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/projects - List projects with filters and sorting
 export async function GET(request: NextRequest) {
     try {
@@ -207,3 +209,4 @@ export async function POST(request: NextRequest) {
         )
     }
 }
+

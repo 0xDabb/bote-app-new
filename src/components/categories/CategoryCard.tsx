@@ -130,7 +130,7 @@ export function CategoryChips({ categories, selectedId, onChange }: CategoryChip
                     {category.icon && (
                         <span
                             className="material-symbols-outlined text-base mr-1"
-                            style={{ color: selectedId === category.id ? 'inherit' : category.color }}
+                            style={{ color: selectedId === category.id ? 'inherit' : (category.color || undefined) }}
                         >
                             {category.icon}
                         </span>

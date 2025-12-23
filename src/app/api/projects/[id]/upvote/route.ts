@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 interface RouteParams {
     params: Promise<{ id: string }>
 }
@@ -86,7 +88,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                         title: 'New Upvote!',
                         message: `${voter?.displayName || voter?.username} upvoted your project "${project.name}"`,
                         userId: project.creatorId,
-                        data: { projectId, voterId: userId },
+                        data: { projectId, voterId: userId } as unknown as undefined,
                     },
                 })
             }

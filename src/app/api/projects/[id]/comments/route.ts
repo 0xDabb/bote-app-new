@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 interface RouteParams {
     params: Promise<{ id: string }>
 }
@@ -143,7 +145,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                         title: 'New Reply!',
                         message: `${commenter?.displayName || commenter?.username} replied to your comment`,
                         userId: parentComment.userId,
-                        data: { projectId, commentId: comment.id, parentId },
+                        data: { projectId, commentId: comment.id, parentId } as unknown as undefined,
                     },
                 })
             }
@@ -155,7 +157,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                     title: 'New Comment!',
                     message: `${commenter?.displayName || commenter?.username} commented on "${project.name}"`,
                     userId: project.creatorId,
-                    data: { projectId, commentId: comment.id },
+                    data: { projectId, commentId: comment.id } as unknown as undefined,
                 },
             })
         }

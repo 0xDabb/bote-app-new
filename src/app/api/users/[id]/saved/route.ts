@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 interface RouteParams {
     params: Promise<{ id: string }>
 }
@@ -46,7 +48,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         })
 
         // Transform to return projects with hasSaved = true
-        const projects = savedProjects.map((sp) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const projects = savedProjects.map((sp: any) => ({
             ...sp.project,
             hasSaved: true,
             savedAt: sp.createdAt,
