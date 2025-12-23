@@ -1,9 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import type { Category } from '@/types'
+import { Server, Bot, Smartphone, Bitcoin, Zap, Palette, Code, Landmark, Users, Gamepad2 } from 'lucide-react'
 
 interface CategoryCardProps {
     category: Category
@@ -25,47 +25,49 @@ const categoryBackgrounds: Record<string, string> = {
     'games': 'https://images.unsplash.com/photo-1493711662062-fa541f7f0b0c?w=400',
 }
 
-// Category icons map
-const categoryIcons: Record<string, string> = {
-    'saas': 'dns',
-    'ai-tools': 'smart_toy',
-    'mobile': 'smartphone',
-    'crypto': 'currency_bitcoin',
-    'productivity': 'bolt',
-    'design': 'palette',
-    'devtools': 'code',
-    'fintech': 'account_balance',
-    'social': 'group',
-    'games': 'sports_esports',
+// Category icons using Lucide React
+function getCategoryIcon(slug: string, color: string = '#49df80', size: number = 28) {
+    const iconProps = { className: `w-${size === 32 ? 8 : 7} h-${size === 32 ? 8 : 7}`, style: { color } }
+
+    const icons: Record<string, React.ReactNode> = {
+        'saas': <Server {...iconProps} />,
+        'ai-tools': <Bot {...iconProps} />,
+        'mobile': <Smartphone {...iconProps} />,
+        'crypto': <Bitcoin {...iconProps} />,
+        'productivity': <Zap {...iconProps} />,
+        'design': <Palette {...iconProps} />,
+        'devtools': <Code {...iconProps} />,
+        'fintech': <Landmark {...iconProps} />,
+        'social': <Users {...iconProps} />,
+        'games': <Gamepad2 {...iconProps} />,
+    }
+
+    return icons[slug] || <Zap {...iconProps} />
 }
 
 export function CategoryCard({ category, variant = 'square', backgroundImage }: CategoryCardProps) {
     const bgImage = backgroundImage || categoryBackgrounds[category.slug] || categoryBackgrounds['saas']
-    const icon = category.icon || categoryIcons[category.slug] || 'folder'
 
     if (variant === 'wide') {
         return (
             <Link href={`/explore?category=${category.slug}`}>
-                <div className="group col-span-2 relative overflow-hidden rounded-2xl bg-[#1A1A1A] h-32 flex flex-col justify-end p-4 border border-white/5 hover:border-[#44e47e]/50 transition-all cursor-pointer">
+                <div className="group col-span-2 relative overflow-hidden rounded-2xl h-32 flex flex-col justify-end p-4 cursor-pointer transition-all"
+                    style={{ background: '#1A1A1A', border: '1px solid rgba(255, 255, 255, 0.05)' }}
+                >
                     <div
                         className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110 opacity-60"
                         style={{ backgroundImage: `url(${bgImage})` }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.4), transparent)' }} />
 
                     <div className="relative z-10 flex items-center justify-between w-full">
                         <div>
                             <p className="font-bold text-lg leading-tight text-white">{category.name}</p>
                             {category._count && (
-                                <p className="text-xs text-[#A0A0A0] mt-1">{category._count.projects}+ Projects</p>
+                                <p className="text-xs mt-1" style={{ color: '#A0A0A0' }}>{category._count.projects}+ Projects</p>
                             )}
                         </div>
-                        <span
-                            className="material-symbols-outlined text-[32px]"
-                            style={{ color: category.color || '#44e47e' }}
-                        >
-                            {icon}
-                        </span>
+                        {getCategoryIcon(category.slug, category.color || '#49df80', 32)}
                     </div>
                 </div>
             </Link>
@@ -74,20 +76,19 @@ export function CategoryCard({ category, variant = 'square', backgroundImage }: 
 
     return (
         <Link href={`/explore?category=${category.slug}`}>
-            <div className="group relative overflow-hidden rounded-2xl bg-[#1A1A1A] aspect-square flex flex-col justify-end p-4 border border-white/5 hover:border-[#44e47e]/50 transition-all cursor-pointer">
+            <div className="group relative overflow-hidden rounded-2xl aspect-square flex flex-col justify-end p-4 cursor-pointer transition-all"
+                style={{ background: '#1A1A1A', border: '1px solid rgba(255, 255, 255, 0.05)' }}
+            >
                 <div
                     className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110 opacity-60"
                     style={{ backgroundImage: `url(${bgImage})` }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.4), transparent)' }} />
 
                 <div className="relative z-10">
-                    <span
-                        className="material-symbols-outlined text-[28px] mb-1"
-                        style={{ color: category.color || '#44e47e' }}
-                    >
-                        {icon}
-                    </span>
+                    <div className="mb-1">
+                        {getCategoryIcon(category.slug, category.color || '#49df80', 28)}
+                    </div>
                     <p className="font-bold text-lg leading-tight text-white">{category.name}</p>
                 </div>
             </div>
@@ -103,15 +104,15 @@ interface CategoryChipsProps {
 
 export function CategoryChips({ categories, selectedId, onChange }: CategoryChipsProps) {
     return (
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 -mx-3 px-3 scroll-smooth">
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-3 px-3" style={{ scrollbarWidth: 'none' }}>
             <button
                 onClick={() => onChange?.(null)}
-                className={cn(
-                    "flex h-8 shrink-0 items-center px-4 rounded-full font-semibold text-xs transition-transform active:scale-95",
-                    !selectedId
-                        ? "bg-[#44e47e] text-black"
-                        : "bg-[#1A1A1A] border border-white/[0.08] text-[#A0A0A0] hover:text-white"
-                )}
+                className="flex h-8 shrink-0 items-center px-4 rounded-full font-semibold text-xs"
+                style={{
+                    background: !selectedId ? '#49df80' : '#1A1A1A',
+                    color: !selectedId ? 'black' : '#A0A0A0',
+                    border: !selectedId ? 'none' : '1px solid rgba(255, 255, 255, 0.08)'
+                }}
             >
                 All
             </button>
@@ -120,21 +121,13 @@ export function CategoryChips({ categories, selectedId, onChange }: CategoryChip
                 <button
                     key={category.id}
                     onClick={() => onChange?.(category.id)}
-                    className={cn(
-                        "flex h-8 shrink-0 items-center px-4 rounded-full font-medium text-xs transition-all active:scale-95",
-                        selectedId === category.id
-                            ? "bg-[#44e47e] text-black"
-                            : "bg-[#1A1A1A] border border-white/[0.08] text-[#A0A0A0] hover:text-white"
-                    )}
+                    className="flex h-8 shrink-0 items-center px-4 rounded-full font-medium text-xs"
+                    style={{
+                        background: selectedId === category.id ? '#49df80' : '#1A1A1A',
+                        color: selectedId === category.id ? 'black' : '#A0A0A0',
+                        border: selectedId === category.id ? 'none' : '1px solid rgba(255, 255, 255, 0.08)'
+                    }}
                 >
-                    {category.icon && (
-                        <span
-                            className="material-symbols-outlined text-base mr-1"
-                            style={{ color: selectedId === category.id ? 'inherit' : (category.color || undefined) }}
-                        >
-                            {category.icon}
-                        </span>
-                    )}
                     {category.name}
                 </button>
             ))}
