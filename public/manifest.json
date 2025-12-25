@@ -1,0 +1,23 @@
+{
+  "name": "Bote App",
+  "short_name": "Bote",
+  "description": "Discover amazing projects, upvote your favorites, and connect with builders on Farcaster.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F0F0F",
+  "theme_color": "#0F0F0F",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "200x200",
+      "type": "image/png"
+    }
+  ],
+  "frame": {
+    "version": "vNext",
+    "imageUrl": "https://dreamy-mermaid-13209a.netlify.app/og-image.png",
+    "splashImageUrl": "https://dreamy-mermaid-13209a.netlify.app/icon.png",
+    "splashBackgroundColor": "#0F0F0F",
+    "homeUrl": "https://dreamy-mermaid-13209a.netlify.app"
+  }
+}
