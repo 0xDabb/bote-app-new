@@ -214,11 +214,6 @@ export default function ProfilePage() {
                                     : "You haven't saved any projects yet"
                             }
                         </p>
-                        {activeTab === 'projects' && (
-                            <Link href="/create" style={{ display: 'inline-block', padding: '12px 24px', borderRadius: '12px', background: '#49df80', color: '#000', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>
-                                Create Project
-                            </Link>
-                        )}
                     </div>
                 )}
             </div>

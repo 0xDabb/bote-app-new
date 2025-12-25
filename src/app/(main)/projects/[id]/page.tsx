@@ -18,6 +18,9 @@ export default function ProjectDetailPage() {
     const [newComment, setNewComment] = useState('')
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
+    const [upvoting, setUpvoting] = useState(false)
+    const [showShareDialog, setShowShareDialog] = useState(false)
+    const [shareMessage, setShareMessage] = useState('')
 
     useEffect(() => {
         if (projectId) {
@@ -46,13 +49,44 @@ export default function ProjectDetailPage() {
     }
 
     async function handleUpvote() {
-        if (!user || !project) return
-        await fetch(`/api/projects/${projectId}/upvote`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id }),
-        })
-        fetchProject()
+        if (!user || !project || upvoting) return
+
+        setUpvoting(true)
+        try {
+            const res = await fetch(`/api/projects/${projectId}/upvote`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.id }),
+            })
+
+            if (res.ok) {
+                await fetchProject()
+            } else {
+                const data = await res.json()
+                alert(data.error || 'Failed to upvote')
+            }
+        } catch (e) {
+            console.error(e)
+            alert('Failed to upvote. Please try again.')
+        } finally {
+            setUpvoting(false)
+        }
+    }
+
+    function handleShare() {
+        if (!project) return
+
+        const url = `https://dreamy-mermaid-13209a.netlify.app/projects/${projectId}`
+        const defaultMessage = `Check out ${project.name} on VoteBase! 🚀\n\n${project.tagline}`
+
+        // Create Farcaster cast URL
+        const message = shareMessage.trim() || defaultMessage
+        const castUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(message)}&embeds[]=${encodeURIComponent(url)}`
+
+        // Open in new window
+        window.open(castUrl, '_blank')
+        setShowShareDialog(false)
+        setShareMessage('')
     }
 
     async function handleSubmitComment() {
@@ -102,10 +136,33 @@ export default function ProjectDetailPage() {
                 <button onClick={() => router.back()} style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
                     <ArrowLeft style={{ width: '20px', height: '20px' }} />
                 </button>
-                <button style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
+                <button onClick={() => setShowShareDialog(true)} style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
                     <Share2 style={{ width: '20px', height: '20px' }} />
                 </button>
             </div>
+
+            {/* Share Dialog */}
+            {showShareDialog && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.8)', padding: '20px' }} onClick={() => setShowShareDialog(false)}>
+                    <div style={{ background: '#161616', borderRadius: '20px', padding: '24px', maxWidth: '400px', width: '100%', border: '1px solid rgba(255,255,255,0.06)' }} onClick={(e) => e.stopPropagation()}>
+                        <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>Share on Farcaster</h3>
+                        <textarea
+                            value={shareMessage}
+                            onChange={(e) => setShareMessage(e.target.value)}
+                            placeholder={`Check out ${project.name} on VoteBase! 🚀\n\n${project.tagline}`}
+                            style={{ width: '100%', minHeight: '100px', padding: '12px', borderRadius: '12px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', fontSize: '14px', resize: 'vertical', outline: 'none', marginBottom: '16px', fontFamily: 'inherit' }}
+                        />
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button onClick={() => setShowShareDialog(false)} style={{ flex: 1, padding: '12px', borderRadius: '12px', background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.06)', color: '#888', fontWeight: 600, cursor: 'pointer' }}>
+                                Cancel
+                            </button>
+                            <button onClick={handleShare} style={{ flex: 1, padding: '12px', borderRadius: '12px', background: '#49df80', border: 'none', color: '#000', fontWeight: 600, cursor: 'pointer' }}>
+                                Share Cast
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Cover Image */}
             <div style={{ width: '100%', height: '280px', position: 'relative' }}>
@@ -157,17 +214,72 @@ export default function ProjectDetailPage() {
                 </div>
 
                 {/* Upvote Button */}
-                <button onClick={handleUpvote} disabled={!user} style={{ width: '100%', padding: '20px', borderRadius: '16px', background: project.hasUpvoted ? '#49df8030' : '#161616', border: project.hasUpvoted ? '2px solid #49df80' : '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: user ? 'pointer' : 'not-allowed', marginBottom: '24px' }}>
+                <button
+                    onClick={handleUpvote}
+                    disabled={!user || upvoting}
+                    style={{
+                        width: '100%',
+                        padding: '20px',
+                        borderRadius: '16px',
+                        background: upvoting ? '#49df8050' : project.hasUpvoted ? '#49df8030' : '#161616',
+                        border: project.hasUpvoted ? '2px solid #49df80' : '1px solid rgba(255,255,255,0.06)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: user && !upvoting ? 'pointer' : 'not-allowed',
+                        marginBottom: '24px',
+                        transition: 'all 0.3s ease',
+                        opacity: upvoting ? 0.7 : 1,
+                        transform: upvoting ? 'scale(0.98)' : 'scale(1)'
+                    }}
+                >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: project.hasUpvoted ? '#49df80' : '#49df8020', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <ArrowUp style={{ width: '24px', height: '24px', color: project.hasUpvoted ? '#000' : '#49df80' }} />
+                        <div style={{
+                            width: '48px',
+                            height: '48px',
+                            borderRadius: '50%',
+                            background: upvoting ? '#49df8080' : project.hasUpvoted ? '#49df80' : '#49df8020',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.3s ease'
+                        }}>
+                            {upvoting ? (
+                                <div style={{
+                                    width: '20px',
+                                    height: '20px',
+                                    border: '2px solid #000',
+                                    borderTopColor: 'transparent',
+                                    borderRadius: '50%',
+                                    animation: 'spin 0.8s linear infinite'
+                                }} />
+                            ) : (
+                                <ArrowUp style={{ width: '24px', height: '24px', color: project.hasUpvoted ? '#000' : '#49df80' }} />
+                            )}
                         </div>
                         <div style={{ textAlign: 'left' }}>
-                            <p style={{ color: project.hasUpvoted ? '#49df80' : '#fff', fontSize: '16px', fontWeight: 700 }}>{project.hasUpvoted ? 'Upvoted!' : 'Upvote'}</p>
-                            <p style={{ color: '#888', fontSize: '12px' }}>{project.hasUpvoted ? 'Thanks for your support' : 'Show your support'}</p>
+                            <p style={{
+                                color: upvoting ? '#888' : project.hasUpvoted ? '#49df80' : '#fff',
+                                fontSize: '16px',
+                                fontWeight: 700,
+                                transition: 'color 0.3s ease'
+                            }}>
+                                {upvoting ? 'Upvoting...' : project.hasUpvoted ? 'Upvoted!' : 'Upvote'}
+                            </p>
+                            <p style={{ color: '#888', fontSize: '12px' }}>
+                                {upvoting ? 'Please wait' : project.hasUpvoted ? 'Thanks for your support' : 'Show your support'}
+                            </p>
                         </div>
                     </div>
-                    <span style={{ color: '#49df80', fontSize: '28px', fontWeight: 700 }}>{fmt(project.upvoteCount)}</span>
+                    <span style={{
+                        color: '#49df80',
+                        fontSize: '28px',
+                        fontWeight: 700,
+                        transition: 'transform 0.3s ease',
+                        transform: upvoting ? 'scale(1.1)' : 'scale(1)'
+                    }}>
+                        {fmt(project.upvoteCount)}
+                    </span>
                 </button>
 
                 {/* Comments */}

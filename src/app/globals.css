@@ -147,6 +147,16 @@ body {
   }
 }
 
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Safe area for bottom navigation */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
