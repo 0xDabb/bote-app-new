@@ -41,6 +41,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
             // Check if we're in a Farcaster frame context
             if (typeof window !== 'undefined') {
+                // Call ready immediately
+                await sdk.actions.ready()
+                console.log('Farcaster SDK ready called')
+
                 const context = await sdk.context
 
                 if (context?.user) {
@@ -62,9 +66,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
                         const data = await response.json()
                         setUser(data.user)
                     }
-
-                    // Tell the frame we're ready
-                    await sdk.actions.ready()
                 }
             }
         } catch (error) {
