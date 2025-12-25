@@ -23,6 +23,22 @@ export const metadata: Metadata = {
     title: "Bote - Discover & Vote for Projects",
     description: "Discover amazing projects, upvote your favorites, and connect with builders.",
   },
+  other: {
+    "fc:frame": JSON.stringify({
+      version: "next",
+      imageUrl: "https://dreamy-mermaid-13209a.netlify.app/og-image.png",
+      button: {
+        title: "Open Bote App",
+        action: {
+          type: "launch_frame",
+          name: "Bote App",
+          url: "https://dreamy-mermaid-13209a.netlify.app",
+          splashImageUrl: "https://dreamy-mermaid-13209a.netlify.app/icon.png",
+          backgroundColor: "#0F0F0F",
+        },
+      },
+    }),
+  },
 };
 
 export const viewport: Viewport = {
