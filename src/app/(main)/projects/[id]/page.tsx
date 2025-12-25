@@ -2,12 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, Share2, MoreHorizontal, ArrowUp, ExternalLink, Send, ThumbsUp, Clock } from 'lucide-react'
+import { ArrowLeft, Share2, ArrowUp, ExternalLink, Send, ThumbsUp, MessageCircle, Globe, Github, Home, Compass, Plus, Bell, User } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { formatNumber, formatTimeAgo } from '@/lib/utils'
-import { cn } from '@/lib/utils'
 import type { Project, Comment } from '@/types'
 
 export default function ProjectDetailPage() {
@@ -31,337 +28,229 @@ export default function ProjectDetailPage() {
 
     async function fetchProject() {
         try {
-            const params = new URLSearchParams()
-            if (user?.id) {
-                params.set('userId', user.id)
-            }
-
-            const res = await fetch(`/api/projects/${projectId}?${params}`)
+            const p = new URLSearchParams()
+            if (user?.id) p.set('userId', user.id)
+            const res = await fetch(`/api/projects/${projectId}?${p}`)
             const data = await res.json()
-
-            if (data.success) {
-                setProject(data.data)
-            }
-        } catch (error) {
-            console.error('Error fetching project:', error)
-        } finally {
-            setLoading(false)
-        }
+            if (data.success) setProject(data.data)
+        } catch (e) { console.error(e) }
+        finally { setLoading(false) }
     }
 
     async function fetchComments() {
         try {
             const res = await fetch(`/api/projects/${projectId}/comments`)
             const data = await res.json()
-
-            if (data.success) {
-                setComments(data.data)
-            }
-        } catch (error) {
-            console.error('Error fetching comments:', error)
-        }
+            if (data.success) setComments(data.data)
+        } catch (e) { console.error(e) }
     }
 
     async function handleUpvote() {
         if (!user || !project) return
-
-        try {
-            await fetch(`/api/projects/${projectId}/upvote`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user.id }),
-            })
-            fetchProject()
-        } catch (error) {
-            console.error('Error voting:', error)
-        }
+        await fetch(`/api/projects/${projectId}/upvote`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id }),
+        })
+        fetchProject()
     }
 
     async function handleSubmitComment() {
         if (!user || !newComment.trim()) return
-
         setSubmitting(true)
         try {
             const res = await fetch(`/api/projects/${projectId}/comments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    content: newComment.trim(),
-                    userId: user.id,
-                }),
+                body: JSON.stringify({ content: newComment.trim(), userId: user.id }),
             })
+            if (res.ok) { setNewComment(''); fetchComments() }
+        } catch (e) { console.error(e) }
+        finally { setSubmitting(false) }
+    }
 
-            if (res.ok) {
-                setNewComment('')
-                fetchComments()
-            }
-        } catch (error) {
-            console.error('Error submitting comment:', error)
-        } finally {
-            setSubmitting(false)
-        }
+    const fmt = (n: number) => n >= 1000 ? (n / 1000).toFixed(1).replace('.0', '') + 'k' : n.toString()
+    const timeAgo = (date: string) => {
+        const mins = Math.floor((Date.now() - new Date(date).getTime()) / 60000)
+        if (mins < 60) return `${mins}m ago`
+        if (mins < 1440) return `${Math.floor(mins / 60)}h ago`
+        return `${Math.floor(mins / 1440)}d ago`
     }
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="w-8 h-8 border-2 border-[#44e47e] border-t-transparent rounded-full animate-spin" />
+            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a' }}>
+                <div style={{ width: '32px', height: '32px', border: '2px solid #49df80', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
             </div>
         )
     }
 
     if (!project) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen px-6 text-center">
-                <h1 className="text-2xl font-bold text-white mb-2">Project Not Found</h1>
-                <p className="text-[#A0A0A0] mb-6">This project doesn&apos;t exist or has been removed.</p>
-                <Link
-                    href="/"
-                    className="px-6 py-2 rounded-full bg-[#44e47e] text-black font-semibold"
-                >
-                    Go Home
-                </Link>
+            <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', padding: '20px' }}>
+                <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>Project Not Found</h1>
+                <p style={{ color: '#888', marginBottom: '24px' }}>This project doesn't exist or has been removed.</p>
+                <Link href="/" style={{ padding: '12px 24px', borderRadius: '12px', background: '#49df80', color: '#000', fontWeight: 600, textDecoration: 'none' }}>Go Home</Link>
             </div>
         )
     }
 
     return (
-        <div className="pb-6">
-            {/* Floating Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 px-5 pt-14 pb-4 flex items-center justify-between pointer-events-none">
-                <button
-                    onClick={() => router.back()}
-                    className="pointer-events-auto w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-white/10 transition-colors"
-                >
-                    <ArrowLeft className="w-5 h-5" />
+        <div style={{ minHeight: '100vh', background: '#0a0a0a', paddingBottom: '120px' }}>
+            {/* Header */}
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button onClick={() => router.back()} style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
+                    <ArrowLeft style={{ width: '20px', height: '20px' }} />
                 </button>
-
-                <div className="flex gap-3 pointer-events-auto">
-                    <button className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-white/10 transition-colors">
-                        <Share2 className="w-5 h-5" />
-                    </button>
-                    <button className="w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-white/10 transition-colors">
-                        <MoreHorizontal className="w-5 h-5" />
-                    </button>
-                </div>
-            </header>
+                <button style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
+                    <Share2 style={{ width: '20px', height: '20px' }} />
+                </button>
+            </div>
 
             {/* Cover Image */}
-            <div className="relative w-full h-[30vh]">
-                {project.coverImage ? (
-                    <Image
-                        src={project.coverImage}
-                        alt={project.name}
-                        fill
-                        className="object-cover"
-                    />
-                ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[#1A1A1A] to-[#262626]" />
-                )}
-                <div className="absolute inset-0 image-overlay-gradient" />
-
-                {/* Tags */}
-                <div className="absolute bottom-6 left-5 flex gap-2">
-                    {project.featured && (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-white backdrop-blur-md border border-white/10">
-                            <span className="text-[#44e47e] mr-1">✨</span>
-                            Featured
-                        </span>
-                    )}
-                    {project.category && (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-white backdrop-blur-md border border-white/10">
-                            {project.category.name}
-                        </span>
-                    )}
-                </div>
+            <div style={{ width: '100%', height: '280px', position: 'relative' }}>
+                <div style={{ position: 'absolute', inset: 0, backgroundImage: project.coverImage ? `url(${project.coverImage})` : 'linear-gradient(135deg, #1a3a2a, #0d1f17)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 20%, #0a0a0a 100%)' }} />
             </div>
 
             {/* Content */}
-            <div className="px-5 -mt-4 relative z-10 space-y-6">
-                {/* Title & Creator */}
-                <div>
-                    <h1 className="text-4xl font-bold leading-tight mb-3 text-white">{project.name}</h1>
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            {project.creator?.avatarUrl && (
-                                <Image
-                                    src={project.creator.avatarUrl}
-                                    alt={project.creator.displayName || project.creator.username}
-                                    width={40}
-                                    height={40}
-                                    className="rounded-full border border-white/10"
-                                />
-                            )}
-                            <div>
-                                <p className="text-sm font-semibold text-white">
-                                    {project.creator?.displayName || project.creator?.username}
-                                </p>
-                                <p className="text-xs text-[#A0A0A0]">@{project.creator?.username}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[#A0A0A0]">
-                            <Clock className="w-4 h-4" />
-                            <span className="text-xs">{formatTimeAgo(project.createdAt)}</span>
-                        </div>
+            <div style={{ padding: '0 20px', marginTop: '-60px', position: 'relative', zIndex: 10 }}>
+                {/* Title & Category */}
+                <div style={{ marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                        {project.category && (
+                            <span style={{ padding: '6px 12px', borderRadius: '20px', background: '#49df8020', color: '#49df80', fontSize: '12px', fontWeight: 600 }}>{project.category.name}</span>
+                        )}
                     </div>
+                    <h1 style={{ color: '#fff', fontSize: '32px', fontWeight: 700, marginBottom: '12px' }}>{project.name}</h1>
+                    <p style={{ color: '#888', fontSize: '15px', lineHeight: 1.6 }}>{project.tagline}</p>
                 </div>
 
-                {/* About Card */}
-                <div className="bg-[#1A1A1A] rounded-2xl border border-white/[0.08] p-5 shadow-lg">
-                    <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-wide opacity-80">
-                        About this project
-                    </h3>
-                    <p className="text-gray-300 text-sm leading-relaxed mb-4">
-                        {project.description || project.tagline}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
+                {/* Creator */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #a855f7)' }} />
+                        <div>
+                            <p style={{ color: '#fff', fontSize: '14px', fontWeight: 600 }}>{project.creator?.displayName || project.creator?.username || 'Anonymous'}</p>
+                            <p style={{ color: '#666', fontSize: '12px' }}>@{project.creator?.username || 'user'}</p>
+                        </div>
+                    </div>
+                    <span style={{ color: '#666', fontSize: '12px' }}>{timeAgo(project.createdAt)}</span>
+                </div>
+
+                {/* About */}
+                <div style={{ padding: '20px', borderRadius: '16px', background: '#161616', marginBottom: '16px' }}>
+                    <h3 style={{ color: '#888', fontSize: '12px', fontWeight: 600, textTransform: 'uppercase', marginBottom: '12px' }}>About</h3>
+                    <p style={{ color: '#ccc', fontSize: '14px', lineHeight: 1.7, marginBottom: '16px' }}>{project.description || project.tagline}</p>
+                    <div style={{ display: 'flex', gap: '16px' }}>
                         {project.websiteUrl && (
-                            <a
-                                href={project.websiteUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-xs font-medium text-[#44e47e] hover:text-white transition-colors"
-                            >
-                                Visit Website <ExternalLink className="w-3 h-3" />
+                            <a href={project.websiteUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#49df80', fontSize: '13px', fontWeight: 500, textDecoration: 'none' }}>
+                                <Globe style={{ width: '14px', height: '14px' }} /> Website
                             </a>
                         )}
                         {project.githubUrl && (
-                            <>
-                                <span className="text-white/20">•</span>
-                                <a
-                                    href={project.githubUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-xs font-medium text-[#A0A0A0] hover:text-white transition-colors"
-                                >
-                                    View on GitHub
-                                </a>
-                            </>
+                            <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#888', fontSize: '13px', fontWeight: 500, textDecoration: 'none' }}>
+                                <Github style={{ width: '14px', height: '14px' }} /> GitHub
+                            </a>
                         )}
                     </div>
                 </div>
 
                 {/* Upvote Button */}
-                <div className="space-y-3">
-                    <h3 className="text-lg font-bold text-white">Project Support</h3>
-                    <button
-                        onClick={handleUpvote}
-                        disabled={!user}
-                        className={cn(
-                            "w-full relative group rounded-3xl p-6 flex items-center justify-between gap-4 transition-all duration-300 active:scale-[0.98] overflow-hidden",
-                            project.hasUpvoted
-                                ? "bg-[#44e47e]/20 border-2 border-[#44e47e]"
-                                : "bg-[#1A1A1A] border border-white/[0.08] hover:border-[#4ADE80]/50"
-                        )}
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#4ADE80]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                        <div className="flex items-center gap-4 z-10">
-                            <div className={cn(
-                                "w-14 h-14 rounded-full flex items-center justify-center transition-colors duration-300",
-                                project.hasUpvoted
-                                    ? "bg-[#44e47e] text-black"
-                                    : "bg-[#4ADE80]/10 text-[#4ADE80] group-hover:bg-[#4ADE80] group-hover:text-black"
-                            )}>
-                                <ArrowUp className="w-8 h-8" strokeWidth={2.5} />
-                            </div>
-                            <div className="text-left">
-                                <span className={cn(
-                                    "block text-xl font-bold transition-colors",
-                                    project.hasUpvoted ? "text-[#44e47e]" : "text-white group-hover:text-[#4ADE80]"
-                                )}>
-                                    {project.hasUpvoted ? 'Upvoted!' : 'Upvote Project'}
-                                </span>
-                                <span className="text-xs font-medium text-[#A0A0A0]">
-                                    {project.hasUpvoted ? 'Thanks for your support' : 'Show your support'}
-                                </span>
-                            </div>
+                <button onClick={handleUpvote} disabled={!user} style={{ width: '100%', padding: '20px', borderRadius: '16px', background: project.hasUpvoted ? '#49df8030' : '#161616', border: project.hasUpvoted ? '2px solid #49df80' : '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: user ? 'pointer' : 'not-allowed', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: project.hasUpvoted ? '#49df80' : '#49df8020', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <ArrowUp style={{ width: '24px', height: '24px', color: project.hasUpvoted ? '#000' : '#49df80' }} />
                         </div>
-
-                        <div className="text-right z-10 pr-2">
-                            <span className="block text-3xl font-bold text-[#4ADE80]">
-                                {formatNumber(project.upvoteCount)}
-                            </span>
+                        <div style={{ textAlign: 'left' }}>
+                            <p style={{ color: project.hasUpvoted ? '#49df80' : '#fff', fontSize: '16px', fontWeight: 700 }}>{project.hasUpvoted ? 'Upvoted!' : 'Upvote'}</p>
+                            <p style={{ color: '#888', fontSize: '12px' }}>{project.hasUpvoted ? 'Thanks for your support' : 'Show your support'}</p>
                         </div>
-                    </button>
-                </div>
-
-                {/* Comments Section */}
-                <div className="pt-4">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-white">
-                            Discussion <span className="text-[#A0A0A0] text-sm font-normal ml-1">({project._count?.comments || 0})</span>
-                        </h3>
-                        <button className="text-[#44e47e] text-xs font-bold hover:underline">View All</button>
                     </div>
+                    <span style={{ color: '#49df80', fontSize: '28px', fontWeight: 700 }}>{fmt(project.upvoteCount)}</span>
+                </button>
 
-                    {/* Comments List */}
-                    <div className="space-y-3">
-                        {comments.map((comment) => (
-                            <div key={comment.id} className="glass-panel rounded-xl p-3 flex gap-3">
-                                {comment.user?.avatarUrl && (
-                                    <Image
-                                        src={comment.user.avatarUrl}
-                                        alt={comment.user.displayName || comment.user.username}
-                                        width={32}
-                                        height={32}
-                                        className="rounded-full border border-white/10 shrink-0"
-                                    />
-                                )}
-                                <div className="flex-1">
-                                    <div className="flex justify-between items-start">
-                                        <span className="text-sm font-bold text-white">
-                                            {comment.user?.displayName || comment.user?.username}
-                                        </span>
-                                        <span className="text-[10px] text-[#A0A0A0]">
-                                            {formatTimeAgo(comment.createdAt)}
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-gray-300 mt-1 leading-snug">{comment.content}</p>
-                                    <div className="flex items-center gap-3 mt-2">
-                                        <button className="flex items-center gap-1 text-[#A0A0A0] text-[10px] hover:text-white">
-                                            <ThumbsUp className="w-3 h-3" /> {comment.likeCount || 0}
-                                        </button>
-                                        <button className="text-[#A0A0A0] text-[10px] hover:text-white">Reply</button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                {/* Comments */}
+                <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: 700 }}>Comments <span style={{ color: '#888', fontWeight: 400 }}>({comments.length})</span></h3>
                     </div>
 
                     {/* Comment Input */}
                     {user && (
-                        <div className="mt-4 flex gap-3 items-center">
-                            {user.avatarUrl && (
-                                <Image
-                                    src={user.avatarUrl}
-                                    alt={user.username}
-                                    width={32}
-                                    height={32}
-                                    className="rounded-full border border-white/10"
-                                />
-                            )}
-                            <div className="flex-1 relative">
+                        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #ff7b54, #ffb347)', flexShrink: 0 }} />
+                            <div style={{ flex: 1, position: 'relative' }}>
                                 <input
                                     type="text"
                                     value={newComment}
                                     onChange={(e) => setNewComment(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment()}
                                     placeholder="Add a comment..."
-                                    className="w-full bg-[#1A1A1A] border border-white/[0.08] rounded-full py-2.5 px-4 text-sm text-white placeholder-[#A0A0A0] focus:ring-1 focus:ring-[#44e47e] focus:border-[#44e47e] outline-none transition-all"
+                                    style={{ width: '100%', padding: '12px 48px 12px 16px', borderRadius: '24px', background: '#161616', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', fontSize: '14px', outline: 'none' }}
                                 />
-                                <button
-                                    onClick={handleSubmitComment}
-                                    disabled={!newComment.trim() || submitting}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-[#44e47e] text-black hover:scale-105 transition-transform disabled:opacity-50"
-                                >
-                                    <Send className="w-3.5 h-3.5" />
+                                <button onClick={handleSubmitComment} disabled={!newComment.trim() || submitting} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', width: '32px', height: '32px', borderRadius: '50%', background: '#49df80', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: newComment.trim() ? 1 : 0.5 }}>
+                                    <Send style={{ width: '14px', height: '14px', color: '#000' }} />
                                 </button>
                             </div>
                         </div>
                     )}
+
+                    {/* Comments List */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {comments.map((c) => (
+                            <div key={c.id} style={{ padding: '16px', borderRadius: '16px', background: '#161616' }}>
+                                <div style={{ display: 'flex', gap: '12px' }}>
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #a855f7)', flexShrink: 0 }} />
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                            <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>{c.user?.displayName || c.user?.username}</span>
+                                            <span style={{ color: '#666', fontSize: '11px' }}>{timeAgo(c.createdAt)}</span>
+                                        </div>
+                                        <p style={{ color: '#ccc', fontSize: '13px', lineHeight: 1.5 }}>{c.content}</p>
+                                        <div style={{ display: 'flex', gap: '16px', marginTop: '10px' }}>
+                                            <button style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#888', fontSize: '11px', background: 'none', border: 'none', cursor: 'pointer' }}>
+                                                <ThumbsUp style={{ width: '12px', height: '12px' }} /> {c.likeCount || 0}
+                                            </button>
+                                            <button style={{ color: '#888', fontSize: '11px', background: 'none', border: 'none', cursor: 'pointer' }}>Reply</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        {comments.length === 0 && (
+                            <p style={{ color: '#666', fontSize: '14px', textAlign: 'center', padding: '32px 0' }}>No comments yet. Be the first to comment!</p>
+                        )}
+                    </div>
                 </div>
             </div>
+
+            {/* Bottom Nav */}
+            <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, padding: '12px 24px 32px 24px', background: 'rgba(10,10,10,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid #1a1a1a' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: '360px', margin: '0 auto' }}>
+                    <Link href="/" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', textDecoration: 'none' }}>
+                        <Home style={{ width: '24px', height: '24px', color: '#666' }} />
+                        <span style={{ fontSize: '10px', color: '#666' }}>Home</span>
+                    </Link>
+                    <Link href="/explore" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', textDecoration: 'none' }}>
+                        <Compass style={{ width: '24px', height: '24px', color: '#666' }} />
+                        <span style={{ fontSize: '10px', color: '#666' }}>Explore</span>
+                    </Link>
+                    <Link href="/create" style={{ position: 'relative', top: '-20px', textDecoration: 'none' }}>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#49df80', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 24px rgba(73,223,128,0.4)' }}>
+                            <Plus style={{ width: '28px', height: '28px', color: '#000', strokeWidth: 2.5 }} />
+                        </div>
+                    </Link>
+                    <Link href="/notifications" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', textDecoration: 'none' }}>
+                        <Bell style={{ width: '24px', height: '24px', color: '#666' }} />
+                        <span style={{ fontSize: '10px', color: '#666' }}>Activity</span>
+                    </Link>
+                    <Link href="/profile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', textDecoration: 'none' }}>
+                        <User style={{ width: '24px', height: '24px', color: '#666' }} />
+                        <span style={{ fontSize: '10px', color: '#666' }}>Profile</span>
+                    </Link>
+                </div>
+            </nav>
         </div>
     )
 }

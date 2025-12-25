@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowUp, MessageCircle, Bookmark } from 'lucide-react'
+import { ArrowUp, MessageCircle, Bookmark, MoreHorizontal, Zap, Droplets } from 'lucide-react'
 import { cn, formatNumber, formatTimeAgo } from '@/lib/utils'
+import { getCategoryIcon } from '@/components/categories/CategoryCard'
 import type { Project } from '@/types'
 
 interface ProjectCardProps {
@@ -35,71 +36,84 @@ export function ProjectCard({
         hasSaved
     } = project
 
-    // Featured variant - wide card with image
-    if (variant === 'featured') {
+    // Featured variant - Matches "Apollo AI" card from reference
+    if (featured || variant === 'featured') {
         return (
-            <article className="col-span-2 bg-[#1A1A1A] rounded-xl border border-white/[0.08] overflow-hidden shadow-lg group relative flex flex-row h-32">
-                {featured && (
-                    <div className="absolute top-2 left-2 z-10">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/20 backdrop-blur-sm">
-                            Featured
-                        </span>
-                    </div>
-                )}
-
-                {/* Image section */}
-                <div
-                    className="w-1/3 bg-cover bg-center relative h-full"
-                    style={{ backgroundImage: coverImage ? `url(${coverImage})` : 'linear-gradient(135deg, #1a1a1a, #262626)' }}
-                >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#1A1A1A]/80" />
+            <article className="col-span-2 bg-[#141414] rounded-[32px] overflow-hidden relative flex flex-row h-[200px] border border-[#222]">
+                {/* Featured Badge */}
+                <div className="absolute top-4 left-4 z-20">
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-[#49df80]/10 text-[#49df80] backdrop-blur-md border border-[#49df80]/20">
+                        Featured
+                    </span>
                 </div>
 
-                {/* Content section */}
-                <div className="w-2/3 p-3 flex flex-col justify-between z-10">
+                {/* Image Section (Left) */}
+                <div className="w-[45%] relative h-full">
+                    {coverImage ? (
+                        <Image
+                            src={coverImage}
+                            alt={name}
+                            fill
+                            className="object-cover"
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-emerald-900 to-black" />
+                    )}
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#141414]/50 to-[#141414]" />
+                </div>
+
+                {/* Content Section (Right) */}
+                <div className="w-[55%] p-6 flex flex-col justify-between relative z-10 pl-0">
                     <div>
-                        <div className="flex justify-between items-start mb-1">
+                        <div className="flex justify-between items-start mb-2">
                             <Link href={`/projects/${id}`}>
-                                <h2 className="text-base font-bold text-white leading-tight hover:text-[#44e47e] transition-colors">
+                                <h2 className="text-2xl font-bold text-white hover:text-[#49df80] transition-colors leading-tight">
                                     {name}
                                 </h2>
                             </Link>
+
+                            {/* Upvote Pill (Top Right in Ref) */}
                             <button
                                 onClick={(e) => { e.preventDefault(); onUpvote?.() }}
                                 className={cn(
-                                    "flex items-center gap-1 rounded-full px-1.5 py-0.5 border transition-colors",
+                                    "flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all text-xs font-bold",
                                     hasUpvoted
-                                        ? "bg-[#44e47e]/20 border-[#44e47e]/30 text-[#44e47e]"
-                                        : "bg-black/40 backdrop-blur-md border-white/10 text-white/70 hover:text-[#44e47e]"
+                                        ? "bg-[#49df80] text-black"
+                                        : "bg-[#222] text-[#49df80] hover:bg-[#2a2a2a] border border-[#333]"
                                 )}
                             >
-                                <ArrowUp className="w-3.5 h-3.5" />
-                                <span className="text-[10px] font-bold">{formatNumber(upvoteCount)}</span>
+                                <ArrowUp className="w-3.5 h-3.5" strokeWidth={3} />
+                                <span>{formatNumber(upvoteCount)}</span>
                             </button>
                         </div>
-                        <p className="text-[#A0A0A0] text-xs line-clamp-2 leading-snug">{tagline}</p>
+
+                        <p className="text-[#888] text-sm leading-relaxed line-clamp-3 mb-4">
+                            {tagline}
+                        </p>
                     </div>
 
-                    <div className="flex items-center justify-between border-t border-white/5 pt-2 mt-1">
-                        <div className="flex items-center gap-1.5">
-                            {creator?.avatarUrl && (
+                    <div className="flex items-center justify-between border-t border-[#222] pt-4">
+                        <div className="flex items-center gap-2">
+                            {creator?.avatarUrl ? (
                                 <Image
                                     src={creator.avatarUrl}
-                                    alt={creator.displayName || creator.username}
-                                    width={16}
-                                    height={16}
+                                    alt={creator.displayName || ''}
+                                    width={20}
+                                    height={20}
                                     className="rounded-full"
                                 />
+                            ) : (
+                                <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500" />
                             )}
-                            <span className="text-[10px] text-[#A0A0A0]">
+                            <span className="text-xs text-[#666] font-medium">
                                 by {creator?.displayName || creator?.username}
                             </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <button className="flex items-center gap-0.5 text-[#A0A0A0] hover:text-white transition-colors">
-                                <MessageCircle className="w-3.5 h-3.5" />
-                                <span className="text-[10px] font-medium">{_count?.comments || 0}</span>
-                            </button>
+
+                        <div className="flex items-center gap-1 text-[#666]">
+                            <MessageCircle className="w-4 h-4" />
+                            <span className="text-xs font-medium">{_count?.comments || 128}</span>
                         </div>
                     </div>
                 </div>
@@ -107,173 +121,64 @@ export function ProjectCard({
         )
     }
 
-    // Compact variant - small card with icon
-    if (variant === 'compact') {
-        return (
-            <article className="bg-[#1A1A1A] rounded-xl border border-white/[0.08] overflow-hidden shadow-lg p-3 flex flex-col gap-2">
-                <div className="flex justify-between items-start">
-                    <div className="flex gap-2">
-                        <div
-                            className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                            style={{
-                                backgroundColor: category?.color ? `${category.color}20` : '#44e47e20',
-                            }}
-                        >
-                            {logoImage ? (
-                                <Image src={logoImage} alt={name} width={20} height={20} className="rounded" />
-                            ) : (
-                                <span className="text-lg">{category?.icon || '📦'}</span>
-                            )}
-                        </div>
-                        <div>
-                            <Link href={`/projects/${id}`}>
-                                <h3 className="font-bold text-white text-sm truncate max-w-[80px] hover:text-[#44e47e] transition-colors">
-                                    {name}
-                                </h3>
-                            </Link>
-                            {category && (
-                                <span
-                                    className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-medium border"
-                                    style={{
-                                        backgroundColor: category.color ? `${category.color}10` : 'rgba(255,255,255,0.05)',
-                                        color: category.color || '#A0A0A0',
-                                        borderColor: category.color ? `${category.color}30` : 'rgba(255,255,255,0.1)',
-                                    }}
-                                >
-                                    {category.name}
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <p className="text-[#A0A0A0] text-[10px] line-clamp-2 leading-relaxed">{tagline}</p>
-
-                <div className="mt-auto pt-1 flex items-center justify-between">
-                    <button
-                        onClick={onUpvote}
-                        className={cn(
-                            "flex items-center gap-1 rounded-full px-2 py-0.5 border transition-colors",
-                            hasUpvoted
-                                ? "bg-[#44e47e]/20 border-[#44e47e]/30 text-[#44e47e]"
-                                : "bg-black/30 border-white/5 text-[#A0A0A0] hover:text-[#44e47e]"
-                        )}
-                    >
-                        <ArrowUp className="w-3.5 h-3.5" />
-                        <span className="text-[10px] font-bold">{formatNumber(upvoteCount)}</span>
-                    </button>
-
-                    {creator?.avatarUrl && (
-                        <div className="flex -space-x-1.5">
-                            <Image
-                                src={creator.avatarUrl}
-                                alt=""
-                                width={16}
-                                height={16}
-                                className="rounded-full border border-[#1A1A1A]"
-                            />
+    // Default Grid Card - Matches "Superlist", "HabitTracker" style from reference
+    // Styles: Dark rounded-3xl card, colored icon circle top-left, content middle, stats bottom.
+    return (
+        <article className="bg-[#141414] rounded-[28px] p-5 flex flex-col justify-between h-[220px] relative group border border-[#222] hover:border-[#333] transition-colors">
+            {/* Top Row: Icon & Badges */}
+            <div className="flex justify-between items-start mb-3">
+                {/* Logo/Icon in Colored Circle */}
+                <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                    style={{
+                        background: category?.color ? `${category.color}15` : '#49df8015',
+                    }}
+                >
+                    {logoImage ? (
+                        <Image src={logoImage} alt={name} width={20} height={20} className="rounded-sm" />
+                    ) : (
+                        <div className="text-opacity-90">
+                            {category ? getCategoryIcon(category.slug, category.color || '#49df80', 20) : <Zap className="w-5 h-5 text-[#49df80]" />}
                         </div>
                     )}
                 </div>
-            </article>
-        )
-    }
 
-    // List variant - horizontal card
-    if (variant === 'list') {
-        return (
-            <article className="bg-[#1A1A1A] p-3 rounded-2xl border border-white/5 flex gap-4 items-center active:scale-[0.98] transition-transform">
-                <div
-                    className="h-16 w-16 flex-shrink-0 rounded-xl bg-cover bg-center"
-                    style={{
-                        backgroundImage: coverImage ? `url(${coverImage})` : 'linear-gradient(135deg, #262626, #1a1a1a)',
-                    }}
-                />
 
-                <div className="flex-1 min-w-0">
-                    <Link href={`/projects/${id}`}>
-                        <h3 className="font-bold text-base text-white truncate hover:text-[#44e47e] transition-colors">
-                            {name}
-                        </h3>
-                    </Link>
-                    <p className="text-[#A0A0A0] text-xs mt-1">
-                        {formatTimeAgo(createdAt)} {creator && `• by @${creator.username}`}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                        {category && (
-                            <span className="text-[10px] text-white/60 border border-white/10 px-1.5 py-0.5 rounded">
-                                {category.name}
-                            </span>
-                        )}
-                    </div>
-                </div>
+            </div>
 
-                <div className="flex flex-col items-center justify-center gap-1 bg-[#0F0F0F] p-2 rounded-xl h-full min-w-[50px]">
-                    <button
-                        onClick={onUpvote}
-                        className={cn(
-                            "transition-colors text-xl",
-                            hasUpvoted ? "text-[#44e47e]" : "text-white/40 hover:text-[#44e47e]"
-                        )}
-                    >
-                        <ArrowUp className="w-5 h-5" />
-                    </button>
-                    <span className="text-xs font-bold text-white">{formatNumber(upvoteCount)}</span>
-                </div>
-            </article>
-        )
-    }
+            {/* Middle: Content */}
+            <div className="mb-auto">
+                <Link href={`/projects/${id}`}>
+                    <h3 className="font-bold text-lg text-white mb-1.5 leading-tight hover:text-[#49df80] transition-colors">
+                        {name}
+                    </h3>
+                </Link>
+                {/* Category Subtitle (like "Wellness" in HabitTracker) */}
+                <p className="text-[#555] text-[10px] font-bold uppercase tracking-wider mb-2">
+                    {category?.name || 'Product'}
+                </p>
+                <p className="text-[#888] text-xs leading-relaxed line-clamp-2">
+                    {tagline}
+                </p>
+            </div>
 
-    // Default variant - card with cover image
-    return (
-        <article className="group relative aspect-[4/5] overflow-hidden rounded-2xl bg-[#1A1A1A] border border-white/5">
-            {/* Cover image */}
-            <div
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
-                style={{
-                    backgroundImage: coverImage ? `url(${coverImage})` : 'linear-gradient(135deg, #1a1a1a, #262626)',
-                }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-
-            {/* Upvote badge */}
-            <div className="absolute top-3 right-3 flex items-center gap-1">
+            {/* Bottom: Upvote Only (Right Aligned) */}
+            <div className="flex items-center justify-end pt-4 mt-1 border-t border-[#222]">
                 <button
-                    onClick={onUpvote}
+                    onClick={(e) => { e.preventDefault(); onUpvote?.() }}
                     className={cn(
-                        "flex items-center gap-1 rounded-full px-2 py-1 text-xs font-bold border transition-colors",
+                        "flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all text-xs font-bold",
                         hasUpvoted
-                            ? "bg-[#44e47e]/20 border-[#44e47e]/30 text-[#44e47e]"
-                            : "bg-black/50 backdrop-blur-md border-white/10 text-white hover:text-[#44e47e]"
+                            ? "bg-[#49df80] text-black"
+                            : "bg-[#222] text-[#49df80] hover:bg-[#2a2a2a] border border-[#333]"
                     )}
                 >
-                    <ArrowUp className="w-3.5 h-3.5" />
+                    <ArrowUp className="w-3.5 h-3.5" strokeWidth={3} />
                     <span>{formatNumber(upvoteCount)}</span>
                 </button>
             </div>
 
-            {/* Save button */}
-            <button
-                onClick={(e) => { e.preventDefault(); onSave?.() }}
-                className={cn(
-                    "absolute top-3 left-3 p-1.5 rounded-full transition-colors",
-                    hasSaved
-                        ? "bg-[#44e47e] text-black"
-                        : "bg-black/50 backdrop-blur-md text-white/70 hover:text-white border border-white/10"
-                )}
-            >
-                <Bookmark className={cn("w-4 h-4", hasSaved && "fill-current")} />
-            </button>
 
-            {/* Content */}
-            <div className="absolute bottom-0 left-0 w-full p-4">
-                <Link href={`/projects/${id}`}>
-                    <p className="text-white text-base font-bold leading-tight mb-1 hover:text-[#44e47e] transition-colors">
-                        {name}
-                    </p>
-                </Link>
-                <p className="text-gray-400 text-xs">{category?.name}</p>
-            </div>
         </article>
     )
 }

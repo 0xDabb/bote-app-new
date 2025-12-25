@@ -91,6 +91,16 @@ body {
   scrollbar-width: none;
 }
 
+/* Hide scrollbar completely */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Glass effect */
 .glass-panel {
   background: rgba(26, 26, 26, 0.7);

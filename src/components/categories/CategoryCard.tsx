@@ -26,7 +26,7 @@ const categoryBackgrounds: Record<string, string> = {
 }
 
 // Category icons using Lucide React
-function getCategoryIcon(slug: string, color: string = '#49df80', size: number = 28) {
+export function getCategoryIcon(slug: string, color: string = '#49df80', size: number = 28) {
     const iconProps = { className: `w-${size === 32 ? 8 : 7} h-${size === 32 ? 8 : 7}`, style: { color } }
 
     const icons: Record<string, React.ReactNode> = {

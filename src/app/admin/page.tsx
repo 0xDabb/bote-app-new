@@ -2,46 +2,50 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Edit, Trash2, Eye, ArrowLeft, LogOut } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, ArrowLeft, LogOut, FolderOpen, LayoutGrid } from 'lucide-react'
 
 interface Project {
     id: string
     name: string
     tagline: string
-    description?: string
     logoImage?: string
-    coverImage?: string
-    websiteUrl?: string
-    githubUrl?: string
-    socialLinks?: {
-        twitter?: string
-        discord?: string
-        telegram?: string
-        farcaster?: string
-    }
     featured: boolean
     status: string
     upvoteCount: number
     category?: { name: string }
-    creator?: { username: string }
     createdAt: string
+}
+
+interface Category {
+    id: string
+    name: string
+    slug: string
+    description?: string
+    color?: string
+    _count?: { projects: number }
 }
 
 export default function AdminPage() {
     const [isAuthenticated, setIsAuthenticated] = useState(false)
     const [password, setPassword] = useState('')
     const [projects, setProjects] = useState<Project[]>([])
+    const [categories, setCategories] = useState<Category[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
+    const [activeTab, setActiveTab] = useState<'projects' | 'categories'>('projects')
 
-    // Simple password check (in production, use proper auth)
+    // Category form
+    const [showCategoryForm, setShowCategoryForm] = useState(false)
+    const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+    const [categoryForm, setCategoryForm] = useState({ name: '', slug: '', description: '', color: '#49df80' })
+
     const ADMIN_PASSWORD = 'bote2024'
 
     useEffect(() => {
         const auth = sessionStorage.getItem('admin_auth')
         if (auth === 'true') {
             setIsAuthenticated(true)
-            fetchProjects()
+            fetchData()
         }
     }, [])
 
@@ -51,7 +55,7 @@ export default function AdminPage() {
             sessionStorage.setItem('admin_auth', 'true')
             setIsAuthenticated(true)
             setError('')
-            fetchProjects()
+            fetchData()
         } else {
             setError('Yanlış şifre!')
         }
@@ -62,16 +66,18 @@ export default function AdminPage() {
         setIsAuthenticated(false)
     }
 
-    async function fetchProjects() {
+    async function fetchData() {
         setLoading(true)
         try {
-            const res = await fetch('/api/projects?pageSize=100')
-            const data = await res.json()
-            if (data.success) {
-                setProjects(data.data)
-            }
+            const [projRes, catRes] = await Promise.all([
+                fetch('/api/projects?pageSize=100'),
+                fetch('/api/admin/categories')
+            ])
+            const [projData, catData] = await Promise.all([projRes.json(), catRes.json()])
+            if (projData.success) setProjects(projData.data)
+            if (catData.success) setCategories(catData.data)
         } catch (err) {
-            console.error('Error fetching projects:', err)
+            console.error('Error:', err)
         } finally {
             setLoading(false)
         }
@@ -79,16 +85,11 @@ export default function AdminPage() {
 
     async function deleteProject(id: string) {
         if (!confirm('Bu projeyi silmek istediğinize emin misiniz?')) return
-
         try {
-            const res = await fetch(`/api/admin/projects/${id}`, {
-                method: 'DELETE'
-            })
-            if (res.ok) {
-                fetchProjects()
-            }
+            const res = await fetch(`/api/admin/projects/${id}`, { method: 'DELETE' })
+            if (res.ok) fetchData()
         } catch (err) {
-            console.error('Error deleting project:', err)
+            console.error('Error:', err)
         }
     }
 
@@ -99,41 +100,83 @@ export default function AdminPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ featured: !currentValue })
             })
+            if (res.ok) fetchData()
+        } catch (err) {
+            console.error('Error:', err)
+        }
+    }
+
+    // Category functions
+    async function handleCategorySubmit(e: React.FormEvent) {
+        e.preventDefault()
+        try {
+            const url = editingCategory
+                ? `/api/admin/categories/${editingCategory.id}`
+                : '/api/admin/categories'
+            const method = editingCategory ? 'PATCH' : 'POST'
+
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(categoryForm)
+            })
+
             if (res.ok) {
-                fetchProjects()
+                fetchData()
+                setShowCategoryForm(false)
+                setEditingCategory(null)
+                setCategoryForm({ name: '', slug: '', description: '', color: '#49df80' })
             }
         } catch (err) {
-            console.error('Error updating project:', err)
+            console.error('Error:', err)
         }
+    }
+
+    async function deleteCategory(id: string) {
+        if (!confirm('Bu kategoriyi silmek istediğinize emin misiniz?')) return
+        try {
+            const res = await fetch(`/api/admin/categories/${id}`, { method: 'DELETE' })
+            const data = await res.json()
+            if (!res.ok) {
+                alert(data.error)
+                return
+            }
+            fetchData()
+        } catch (err) {
+            console.error('Error:', err)
+        }
+    }
+
+    function editCategory(cat: Category) {
+        setEditingCategory(cat)
+        setCategoryForm({
+            name: cat.name,
+            slug: cat.slug,
+            description: cat.description || '',
+            color: cat.color || '#49df80'
+        })
+        setShowCategoryForm(true)
     }
 
     // Login Screen
     if (!isAuthenticated) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#0F0F0F' }}>
-                <div
-                    className="w-full max-w-md p-8 rounded-2xl"
-                    style={{ background: '#1A1A1A', border: '1px solid rgba(255,255,255,0.08)' }}
-                >
-                    <h1 className="text-2xl font-bold text-white mb-6 text-center">Admin Panel</h1>
-                    <form onSubmit={handleLogin} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-white/60 mb-2">Şifre</label>
+            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: '#0a0a0a' }}>
+                <div style={{ width: '100%', maxWidth: '400px', padding: '32px', borderRadius: '16px', background: '#161616', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#fff', marginBottom: '24px', textAlign: 'center' }}>Admin Panel</h1>
+                    <form onSubmit={handleLogin}>
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{ display: 'block', fontSize: '14px', color: '#888', marginBottom: '8px' }}>Şifre</label>
                             <input
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full p-3 rounded-xl text-white outline-none"
-                                style={{ background: '#0F0F0F', border: '1px solid rgba(255,255,255,0.1)' }}
+                                style={{ width: '100%', padding: '12px', borderRadius: '12px', background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }}
                                 placeholder="Admin şifresini girin..."
                             />
                         </div>
-                        {error && <p className="text-red-500 text-sm">{error}</p>}
-                        <button
-                            type="submit"
-                            className="w-full py-3 rounded-xl font-semibold text-black transition-opacity hover:opacity-90"
-                            style={{ background: '#49df80' }}
-                        >
+                        {error && <p style={{ color: '#ef4444', fontSize: '14px', marginBottom: '16px' }}>{error}</p>}
+                        <button type="submit" style={{ width: '100%', padding: '12px', borderRadius: '12px', background: '#49df80', color: '#000', fontWeight: 600, border: 'none', cursor: 'pointer' }}>
                             Giriş Yap
                         </button>
                     </form>
@@ -142,156 +185,188 @@ export default function AdminPage() {
         )
     }
 
-    // Admin Dashboard
     return (
-        <div className="min-h-screen p-4 md:p-8" style={{ background: '#0F0F0F' }}>
-            <div className="max-w-6xl mx-auto">
+        <div style={{ minHeight: '100vh', padding: '24px', background: '#0a0a0a' }}>
+            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
                 {/* Header */}
-                <div className="flex justify-between items-center mb-8">
-                    <div className="flex items-center gap-4">
-                        <Link href="/" className="text-white/60 hover:text-white">
-                            <ArrowLeft className="w-6 h-6" />
-                        </Link>
-                        <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <Link href="/" style={{ color: '#888' }}><ArrowLeft style={{ width: '24px', height: '24px' }} /></Link>
+                        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#fff' }}>Admin Panel</h1>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <Link
-                            href="/admin/projects/new"
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-black"
-                            style={{ background: '#49df80' }}
-                        >
-                            <Plus className="w-5 h-5" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Link href="/admin/projects/new" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', borderRadius: '12px', background: '#49df80', color: '#000', fontWeight: 600, textDecoration: 'none' }}>
+                            <Plus style={{ width: '20px', height: '20px' }} />
                             Yeni Proje
                         </Link>
-                        <button
-                            onClick={handleLogout}
-                            className="p-2 rounded-xl text-white/60 hover:text-white transition-colors"
-                            style={{ background: '#1A1A1A' }}
-                        >
-                            <LogOut className="w-5 h-5" />
+                        <button onClick={handleLogout} style={{ padding: '10px', borderRadius: '12px', background: '#161616', color: '#888', border: 'none', cursor: 'pointer' }}>
+                            <LogOut style={{ width: '20px', height: '20px' }} />
                         </button>
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    <div className="p-4 rounded-xl" style={{ background: '#1A1A1A', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        <p className="text-white/60 text-sm">Toplam Proje</p>
-                        <p className="text-2xl font-bold text-white">{projects.length}</p>
-                    </div>
-                    <div className="p-4 rounded-xl" style={{ background: '#1A1A1A', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        <p className="text-white/60 text-sm">Öne Çıkan</p>
-                        <p className="text-2xl font-bold" style={{ color: '#49df80' }}>
-                            {projects.filter(p => p.featured).length}
-                        </p>
-                    </div>
-                    <div className="p-4 rounded-xl" style={{ background: '#1A1A1A', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        <p className="text-white/60 text-sm">Aktif</p>
-                        <p className="text-2xl font-bold text-white">
-                            {projects.filter(p => p.status === 'ACTIVE').length}
-                        </p>
-                    </div>
-                    <div className="p-4 rounded-xl" style={{ background: '#1A1A1A', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        <p className="text-white/60 text-sm">Toplam Upvote</p>
-                        <p className="text-2xl font-bold text-white">
-                            {projects.reduce((sum, p) => sum + p.upvoteCount, 0)}
-                        </p>
-                    </div>
+                {/* Tabs */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+                    <button
+                        onClick={() => setActiveTab('projects')}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '12px', border: 'none', cursor: 'pointer', background: activeTab === 'projects' ? '#49df80' : '#161616', color: activeTab === 'projects' ? '#000' : '#888', fontWeight: 600 }}
+                    >
+                        <LayoutGrid style={{ width: '18px', height: '18px' }} />
+                        Projeler ({projects.length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('categories')}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '12px', border: 'none', cursor: 'pointer', background: activeTab === 'categories' ? '#49df80' : '#161616', color: activeTab === 'categories' ? '#000' : '#888', fontWeight: 600 }}
+                    >
+                        <FolderOpen style={{ width: '18px', height: '18px' }} />
+                        Kategoriler ({categories.length})
+                    </button>
                 </div>
 
-                {/* Projects Table */}
-                <div
-                    className="rounded-2xl overflow-hidden"
-                    style={{ background: '#1A1A1A', border: '1px solid rgba(255,255,255,0.08)' }}
-                >
-                    <div className="p-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-                        <h2 className="text-lg font-bold text-white">Projeler</h2>
-                    </div>
-
-                    {loading ? (
-                        <div className="p-8 text-center text-white/60">Yükleniyor...</div>
-                    ) : projects.length === 0 ? (
-                        <div className="p-8 text-center text-white/60">Henüz proje yok.</div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
-                                        <th className="text-left p-4 text-white/60 text-sm font-medium">Proje</th>
-                                        <th className="text-left p-4 text-white/60 text-sm font-medium">Kategori</th>
-                                        <th className="text-left p-4 text-white/60 text-sm font-medium">Upvotes</th>
-                                        <th className="text-left p-4 text-white/60 text-sm font-medium">Öne Çıkan</th>
-                                        <th className="text-left p-4 text-white/60 text-sm font-medium">İşlemler</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {projects.map((project) => (
-                                        <tr
-                                            key={project.id}
-                                            className="border-t"
-                                            style={{ borderColor: 'rgba(255,255,255,0.05)' }}
-                                        >
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-3">
-                                                    {project.logoImage ? (
-                                                        <img
-                                                            src={project.logoImage}
-                                                            alt={project.name}
-                                                            className="w-10 h-10 rounded-lg object-cover"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg" style={{ background: '#0F0F0F' }}>
-                                                            {project.name.charAt(0)}
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <p className="font-medium text-white">{project.name}</p>
-                                                        <p className="text-sm text-white/40 truncate max-w-[200px]">{project.tagline}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="p-4 text-white/60">{project.category?.name || '-'}</td>
-                                            <td className="p-4 text-white">{project.upvoteCount}</td>
-                                            <td className="p-4">
-                                                <button
-                                                    onClick={() => toggleFeatured(project.id, project.featured)}
-                                                    className={`px-3 py-1 rounded-full text-xs font-medium ${project.featured
-                                                            ? 'bg-blue-500/20 text-blue-400'
-                                                            : 'bg-white/5 text-white/40'
-                                                        }`}
-                                                >
-                                                    {project.featured ? 'Evet' : 'Hayır'}
-                                                </button>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-2">
-                                                    <Link
-                                                        href={`/projects/${project.id}`}
-                                                        className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
-                                                    >
-                                                        <Eye className="w-4 h-4" />
-                                                    </Link>
-                                                    <Link
-                                                        href={`/admin/projects/${project.id}/edit`}
-                                                        className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
-                                                    >
-                                                        <Edit className="w-4 h-4" />
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => deleteProject(project.id)}
-                                                        className="p-2 rounded-lg hover:bg-red-500/10 text-white/60 hover:text-red-500 transition-colors"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                {/* Projects Tab */}
+                {activeTab === 'projects' && (
+                    <div style={{ borderRadius: '16px', overflow: 'hidden', background: '#161616', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <div style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>Projeler</h2>
                         </div>
-                    )}
-                </div>
+                        {loading ? (
+                            <div style={{ padding: '32px', textAlign: 'center', color: '#888' }}>Yükleniyor...</div>
+                        ) : (
+                            <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                                            <th style={{ textAlign: 'left', padding: '12px 16px', color: '#888', fontSize: '13px', fontWeight: 500 }}>Proje</th>
+                                            <th style={{ textAlign: 'left', padding: '12px 16px', color: '#888', fontSize: '13px', fontWeight: 500 }}>Kategori</th>
+                                            <th style={{ textAlign: 'left', padding: '12px 16px', color: '#888', fontSize: '13px', fontWeight: 500 }}>Upvotes</th>
+                                            <th style={{ textAlign: 'left', padding: '12px 16px', color: '#888', fontSize: '13px', fontWeight: 500 }}>Öne Çıkan</th>
+                                            <th style={{ textAlign: 'left', padding: '12px 16px', color: '#888', fontSize: '13px', fontWeight: 500 }}>İşlemler</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {projects.map((p) => (
+                                            <tr key={p.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <td style={{ padding: '12px 16px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                                                            {p.logoImage ? <img src={p.logoImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }} /> : p.name.charAt(0)}
+                                                        </div>
+                                                        <div>
+                                                            <p style={{ color: '#fff', fontWeight: 500 }}>{p.name}</p>
+                                                            <p style={{ color: '#666', fontSize: '12px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.tagline}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '12px 16px', color: '#888' }}>{p.category?.name || '-'}</td>
+                                                <td style={{ padding: '12px 16px', color: '#fff' }}>{p.upvoteCount}</td>
+                                                <td style={{ padding: '12px 16px' }}>
+                                                    <button onClick={() => toggleFeatured(p.id, p.featured)} style={{ padding: '4px 12px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 500, background: p.featured ? '#49df8020' : '#ffffff10', color: p.featured ? '#49df80' : '#888' }}>
+                                                        {p.featured ? 'Evet' : 'Hayır'}
+                                                    </button>
+                                                </td>
+                                                <td style={{ padding: '12px 16px' }}>
+                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                        <Link href={`/projects/${p.id}`} style={{ padding: '8px', borderRadius: '8px', color: '#888' }}><Eye style={{ width: '16px', height: '16px' }} /></Link>
+                                                        <Link href={`/admin/projects/${p.id}/edit`} style={{ padding: '8px', borderRadius: '8px', color: '#888' }}><Edit style={{ width: '16px', height: '16px' }} /></Link>
+                                                        <button onClick={() => deleteProject(p.id)} style={{ padding: '8px', borderRadius: '8px', color: '#888', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 style={{ width: '16px', height: '16px' }} /></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Categories Tab */}
+                {activeTab === 'categories' && (
+                    <div style={{ borderRadius: '16px', overflow: 'hidden', background: '#161616', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <div style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>Kategoriler</h2>
+                            <button onClick={() => { setShowCategoryForm(true); setEditingCategory(null); setCategoryForm({ name: '', slug: '', description: '', color: '#49df80' }) }} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '10px', background: '#49df80', color: '#000', fontWeight: 600, border: 'none', cursor: 'pointer' }}>
+                                <Plus style={{ width: '18px', height: '18px' }} />
+                                Yeni Kategori
+                            </button>
+                        </div>
+
+                        {/* Category Form Modal */}
+                        {showCategoryForm && (
+                            <div style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: '#0a0a0a' }}>
+                                <form onSubmit={handleCategorySubmit}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Kategori Adı"
+                                            value={categoryForm.name}
+                                            onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+                                            style={{ padding: '10px', borderRadius: '8px', background: '#161616', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }}
+                                            required
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Slug"
+                                            value={categoryForm.slug}
+                                            onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
+                                            style={{ padding: '10px', borderRadius: '8px', background: '#161616', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }}
+                                            required
+                                        />
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px', marginBottom: '12px' }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Açıklama (opsiyonel)"
+                                            value={categoryForm.description}
+                                            onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+                                            style={{ padding: '10px', borderRadius: '8px', background: '#161616', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }}
+                                        />
+                                        <input
+                                            type="color"
+                                            value={categoryForm.color}
+                                            onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
+                                            style={{ width: '44px', height: '44px', borderRadius: '8px', border: 'none', cursor: 'pointer' }}
+                                        />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button type="submit" style={{ padding: '10px 20px', borderRadius: '8px', background: '#49df80', color: '#000', fontWeight: 600, border: 'none', cursor: 'pointer' }}>
+                                            {editingCategory ? 'Güncelle' : 'Ekle'}
+                                        </button>
+                                        <button type="button" onClick={() => { setShowCategoryForm(false); setEditingCategory(null) }} style={{ padding: '10px 20px', borderRadius: '8px', background: '#333', color: '#fff', fontWeight: 600, border: 'none', cursor: 'pointer' }}>
+                                            İptal
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        )}
+
+                        <div style={{ padding: '16px' }}>
+                            <div style={{ display: 'grid', gap: '12px' }}>
+                                {categories.map((cat) => (
+                                    <div key={cat.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', borderRadius: '12px', background: '#0a0a0a' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${cat.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: cat.color }} />
+                                            </div>
+                                            <div>
+                                                <p style={{ color: '#fff', fontWeight: 600 }}>{cat.name}</p>
+                                                <p style={{ color: '#666', fontSize: '12px' }}>{cat._count?.projects || 0} proje</p>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button onClick={() => editCategory(cat)} style={{ padding: '8px', borderRadius: '8px', background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}>
+                                                <Edit style={{ width: '16px', height: '16px' }} />
+                                            </button>
+                                            <button onClick={() => deleteCategory(cat.id)} style={{ padding: '8px', borderRadius: '8px', background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}>
+                                                <Trash2 style={{ width: '16px', height: '16px' }} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )

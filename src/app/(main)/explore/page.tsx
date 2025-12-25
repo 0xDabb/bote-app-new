@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Search, Flame, ChevronRight, ArrowUp, Home, Compass, Plus, Bell, User, Server, Bot, Zap, Bitcoin, Smartphone, Palette } from 'lucide-react'
+import { Search, Flame, ChevronRight, ArrowUp, Home, Compass, Plus, Bell, User, Zap } from 'lucide-react'
 import type { Project, Category } from '@/types'
 
 export default function ExplorePage() {
@@ -10,248 +10,138 @@ export default function ExplorePage() {
     const [projects, setProjects] = useState<Project[]>([])
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        fetchData()
-    }, [])
+    useEffect(() => { fetchData() }, [])
 
     async function fetchData() {
         setLoading(true)
         try {
             const catRes = await fetch('/api/categories')
             const catData = await catRes.json()
-            if (catData.success) {
-                setCategories(catData.data)
-            }
+            if (catData.success) setCategories(catData.data)
 
             const projRes = await fetch('/api/projects?sortBy=upvotes&pageSize=10')
             const projData = await projRes.json()
-            if (projData.success) {
-                setProjects(projData.data)
-            }
-        } catch (error) {
-            console.error('Error fetching data:', error)
-        } finally {
-            setLoading(false)
-        }
+            if (projData.success) setProjects(projData.data)
+        } catch (e) { console.error(e) }
+        finally { setLoading(false) }
     }
 
-    const formatCount = (count: number) => {
-        if (count >= 1000) {
-            return (count / 1000).toFixed(1).replace(/\.0$/, '') + 'k'
-        }
-        return count.toString()
-    }
-
-    const getCategoryIcon = (name: string) => {
-        const icons: Record<string, React.ReactNode> = {
-            'SaaS': <Server className="w-7 h-7" style={{ color: '#49df80' }} />,
-            'AI Tools': <Bot className="w-7 h-7" style={{ color: '#49df80' }} />,
-            'Productivity': <Zap className="w-7 h-7" style={{ color: '#49df80' }} />,
-            'Crypto': <Bitcoin className="w-7 h-7" style={{ color: '#49df80' }} />,
-            'Mobile': <Smartphone className="w-7 h-7" style={{ color: '#49df80' }} />,
-            'Design': <Palette className="w-7 h-7" style={{ color: '#49df80' }} />,
-        }
-        return icons[name] || <Zap className="w-7 h-7" style={{ color: '#49df80' }} />
-    }
-
-    const categoryImages: Record<string, string> = {
-        'SaaS': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=400&fit=crop',
-        'AI Tools': 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=400&fit=crop',
-        'Productivity': 'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=400&h=400&fit=crop',
-        'Crypto': 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400&h=400&fit=crop',
-        'Mobile': 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=400&fit=crop',
-    }
+    const fmt = (n: number) => n >= 1000 ? (n / 1000).toFixed(1).replace('.0', '') + 'k' : n.toString()
 
     return (
-        <div className="min-h-screen pb-24" style={{ background: '#0F0F0F' }}>
-            {/* Header */}
-            <header
-                className="sticky top-0 z-40 w-full pt-6 pb-4 px-4"
-                style={{
-                    background: 'rgba(15, 15, 15, 0.9)',
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
-                }}
-            >
-                <h1 className="text-3xl font-bold tracking-tight mb-4 text-white">Explore</h1>
-                <div className="relative flex w-full items-center">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                        <Search className="w-5 h-5" style={{ color: '#49df80' }} />
-                    </div>
+        <div style={{ background: '#0a0a0a', minHeight: '100vh', paddingBottom: '120px' }}>
+
+            {/* HEADER */}
+            <div style={{ padding: '24px 20px 20px 20px' }}>
+                <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 700, marginBottom: '16px' }}>Explore</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', height: '48px', padding: '0 16px', borderRadius: '12px', background: '#161616', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <Search style={{ width: '18px', height: '18px', color: '#49df80' }} />
                     <input
-                        className="block w-full p-4 pl-12 text-sm text-white rounded-xl outline-none"
-                        style={{ background: '#1A1A1A', border: '1px solid rgba(255, 255, 255, 0.05)' }}
-                        placeholder="Search projects, tags, or makers..."
                         type="text"
+                        placeholder="Search projects, tags, or makers..."
+                        style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '14px' }}
                     />
                 </div>
-            </header>
+            </div>
 
-            {/* Categories Bento Grid */}
-            <section className="mt-6 px-4">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold text-white">Categories</h2>
-                    <button style={{ color: '#49df80' }} className="text-sm font-medium">See All</button>
+            {/* CATEGORIES */}
+            <div style={{ padding: '0 20px 24px 20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700 }}>Categories</h2>
+                    <button style={{ color: '#49df80', fontSize: '13px', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>See All</button>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                    {categories.slice(0, 5).map((cat, index) => (
-                        <Link
-                            href={`/?category=${cat.id}`}
-                            key={cat.id}
-                            className={`group relative overflow-hidden rounded-2xl flex flex-col justify-end p-4 ${index === 2 ? 'col-span-2 h-28' : 'aspect-square'
-                                }`}
-                            style={{ background: '#1A1A1A', border: '1px solid rgba(255, 255, 255, 0.05)' }}
-                        >
-                            <div
-                                className="absolute inset-0 bg-cover bg-center opacity-50 group-hover:opacity-70 transition-opacity"
-                                style={{ backgroundImage: `url('${categoryImages[cat.name] || 'https://picsum.photos/400/400'}')` }}
-                            />
-                            <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.3), transparent)' }} />
-                            <div className="relative z-10">
-                                {index !== 2 && getCategoryIcon(cat.name)}
-                                <div className={index === 2 ? 'flex items-center justify-between w-full' : 'mt-2'}>
-                                    <div>
-                                        <p className="font-bold text-lg text-white">{cat.name}</p>
-                                        {index === 2 && (
-                                            <p className="text-xs mt-1" style={{ color: '#A0A0A0' }}>{cat._count?.projects || 0}+ Projects</p>
-                                        )}
-                                    </div>
-                                    {index === 2 && getCategoryIcon(cat.name)}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    {categories.slice(0, 4).map((cat) => (
+                        <Link href={`/?category=${cat.id}`} key={cat.id} style={{ textDecoration: 'none' }}>
+                            <div style={{ borderRadius: '16px', padding: '16px', background: '#161616', height: '100px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#49df8020', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}>
+                                    <Zap style={{ width: '16px', height: '16px', color: '#49df80' }} />
                                 </div>
+                                <span style={{ color: '#fff', fontSize: '14px', fontWeight: 600 }}>{cat.name}</span>
                             </div>
                         </Link>
                     ))}
                 </div>
-            </section>
+            </div>
 
-            {/* Trending Projects */}
-            <section className="mt-8">
-                <div className="flex justify-between items-center mb-4 px-4">
-                    <div className="flex items-center gap-2">
-                        <Flame className="w-5 h-5" style={{ color: '#49df80' }} />
-                        <h2 className="text-xl font-bold text-white">Trending Now</h2>
+            {/* TRENDING */}
+            <div style={{ padding: '0 20px 24px 20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Flame style={{ width: '18px', height: '18px', color: '#49df80' }} />
+                        <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700 }}>Trending Now</h2>
                     </div>
-                    <button style={{ color: '#49df80' }}>
-                        <ChevronRight className="w-5 h-5" />
-                    </button>
+                    <ChevronRight style={{ width: '20px', height: '20px', color: '#49df80' }} />
                 </div>
-                <div className="flex overflow-x-auto pb-4 pl-4 gap-4" style={{ scrollbarWidth: 'none' }}>
-                    {projects.slice(0, 4).map((project) => (
-                        <Link href={`/projects/${project.id}`} key={project.id} className="flex-none w-[260px]">
-                            <div
-                                className="rounded-2xl overflow-hidden"
-                                style={{ background: '#1A1A1A', border: '1px solid rgba(255, 255, 255, 0.05)' }}
-                            >
-                                <div
-                                    className="h-32 w-full bg-cover bg-center"
-                                    style={{ backgroundImage: `url('${project.coverImage || 'https://picsum.photos/400/300'}')` }}
-                                />
-                                <div className="p-4">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="font-bold text-base text-white">{project.name}</h3>
-                                        <div
-                                            className="flex items-center gap-1 px-2 py-1 rounded-lg"
-                                            style={{ background: 'rgba(73, 223, 128, 0.1)' }}
-                                        >
-                                            <ArrowUp className="w-3 h-3" style={{ color: '#49df80' }} />
-                                            <span className="text-xs font-bold" style={{ color: '#49df80' }}>{formatCount(project.upvoteCount)}</span>
+                <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }} className="hide-scrollbar">
+                    {projects.slice(0, 4).map((p) => (
+                        <Link href={`/projects/${p.id}`} key={p.id} style={{ textDecoration: 'none', flexShrink: 0, width: '220px' }}>
+                            <div style={{ borderRadius: '16px', overflow: 'hidden', background: '#161616' }}>
+                                <div style={{ height: '100px', backgroundImage: p.coverImage ? `url(${p.coverImage})` : 'linear-gradient(135deg, #2a4a3a, #1a2a22)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                                <div style={{ padding: '12px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                                        <h3 style={{ color: '#fff', fontSize: '14px', fontWeight: 700, margin: 0 }}>{p.name}</h3>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#49df8020', padding: '4px 8px', borderRadius: '8px' }}>
+                                            <ArrowUp style={{ width: '12px', height: '12px', color: '#49df80' }} />
+                                            <span style={{ fontSize: '11px', fontWeight: 700, color: '#49df80' }}>{fmt(p.upvoteCount)}</span>
                                         </div>
                                     </div>
-                                    <p className="text-sm line-clamp-2" style={{ color: '#A0A0A0' }}>{project.tagline}</p>
-                                    <div className="mt-3">
-                                        <span
-                                            className="text-[10px] font-medium px-2 py-1 rounded-md"
-                                            style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)' }}
-                                        >
-                                            {project.category?.name || 'Project'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </Link>
-                    ))}
-                    <div className="w-4 shrink-0" />
-                </div>
-            </section>
-
-            {/* New Arrivals */}
-            <section className="mt-6 px-4">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold text-white">New Arrivals</h2>
-                    <button style={{ color: '#49df80' }} className="text-sm font-medium">View All</button>
-                </div>
-                <div className="flex flex-col gap-3">
-                    {projects.slice(0, 3).map((project) => (
-                        <Link href={`/projects/${project.id}`} key={project.id}>
-                            <div
-                                className="p-3 rounded-2xl flex gap-4 items-center"
-                                style={{ background: '#1A1A1A', border: '1px solid rgba(255, 255, 255, 0.05)' }}
-                            >
-                                <div
-                                    className="h-14 w-14 shrink-0 rounded-xl bg-cover bg-center"
-                                    style={{ backgroundImage: `url('${project.coverImage || 'https://picsum.photos/100/100'}')` }}
-                                />
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-sm text-white truncate">{project.name}</h3>
-                                    <p className="text-xs mt-0.5" style={{ color: '#A0A0A0' }}>by {project.creator?.displayName || project.creator?.username}</p>
-                                    <span
-                                        className="text-[10px] px-1.5 py-0.5 rounded mt-1 inline-block"
-                                        style={{ border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.6)' }}
-                                    >
-                                        {project.category?.name || 'Project'}
-                                    </span>
-                                </div>
-                                <div
-                                    className="flex flex-col items-center gap-1 p-2 rounded-xl min-w-[50px]"
-                                    style={{ background: '#0F0F0F' }}
-                                >
-                                    <ArrowUp className="w-4 h-4" style={{ color: '#A0A0A0' }} />
-                                    <span className="text-xs font-bold text-white">{formatCount(project.upvoteCount)}</span>
+                                    <p style={{ color: '#888', fontSize: '11px', margin: 0, lineHeight: 1.4 }}>{p.tagline}</p>
                                 </div>
                             </div>
                         </Link>
                     ))}
                 </div>
-            </section>
+            </div>
 
-            {/* Bottom Navigation */}
-            <nav
-                className="fixed bottom-0 left-0 right-0 z-50 pb-6 pt-3"
-                style={{
-                    background: 'rgba(15, 15, 15, 0.9)',
-                    backdropFilter: 'blur(16px)',
-                    WebkitBackdropFilter: 'blur(16px)',
-                    borderTop: '1px solid rgba(255, 255, 255, 0.05)'
-                }}
-            >
-                <div className="flex justify-around items-center px-4">
-                    <Link href="/" className="flex flex-col items-center gap-1" style={{ color: '#A0A0A0' }}>
-                        <Home className="w-6 h-6" />
-                        <span className="text-[10px] font-medium">Home</span>
+            {/* NEW ARRIVALS */}
+            <div style={{ padding: '0 20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700 }}>New Arrivals</h2>
+                    <button style={{ color: '#49df80', fontSize: '13px', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>View All</button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {projects.slice(0, 3).map((p) => (
+                        <Link href={`/projects/${p.id}`} key={p.id} style={{ textDecoration: 'none' }}>
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '12px', borderRadius: '16px', background: '#161616' }}>
+                                <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundImage: p.coverImage ? `url(${p.coverImage})` : 'linear-gradient(135deg, #2a4a3a, #1a2a22)', backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0 }} />
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <h3 style={{ color: '#fff', fontSize: '14px', fontWeight: 700, margin: 0 }}>{p.name}</h3>
+                                    <p style={{ color: '#666', fontSize: '11px', margin: 0 }}>by {p.creator?.displayName || 'User'}</p>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', padding: '8px', borderRadius: '10px', background: '#0a0a0a' }}>
+                                    <ArrowUp style={{ width: '14px', height: '14px', color: '#888' }} />
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#fff' }}>{fmt(p.upvoteCount)}</span>
+                                </div>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            </div>
+
+            {/* BOTTOM NAV */}
+            <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, padding: '12px 24px 32px 24px', background: 'rgba(10,10,10,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid #1a1a1a' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: '360px', margin: '0 auto' }}>
+                    <Link href="/" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', textDecoration: 'none' }}>
+                        <Home style={{ width: '24px', height: '24px', color: '#666' }} />
+                        <span style={{ fontSize: '10px', color: '#666' }}>Home</span>
                     </Link>
-                    <Link href="/explore" className="flex flex-col items-center gap-1" style={{ color: '#49df80' }}>
-                        <Compass className="w-6 h-6" fill="currentColor" />
-                        <span className="text-[10px] font-medium">Explore</span>
+                    <Link href="/explore" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', textDecoration: 'none' }}>
+                        <Compass style={{ width: '24px', height: '24px', color: '#49df80', fill: '#49df80' }} />
+                        <span style={{ fontSize: '10px', color: '#49df80' }}>Explore</span>
                     </Link>
-                    <Link href="/create" className="relative -top-5">
-                        <button
-                            className="w-14 h-14 rounded-full flex items-center justify-center"
-                            style={{ background: '#49df80', boxShadow: '0 0 15px rgba(73, 223, 128, 0.3)' }}
-                        >
-                            <Plus className="w-7 h-7 text-black" strokeWidth={2.5} />
-                        </button>
-                    </Link>
-                    <Link href="/notifications" className="flex flex-col items-center gap-1 relative" style={{ color: '#A0A0A0' }}>
-                        <div className="relative">
-                            <Bell className="w-6 h-6" />
-                            <span className="absolute -top-0.5 -right-0.5 h-2 w-2 bg-red-500 rounded-full" />
+                    <Link href="/create" style={{ position: 'relative', top: '-20px', textDecoration: 'none' }}>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#49df80', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 24px rgba(73,223,128,0.4)' }}>
+                            <Plus style={{ width: '28px', height: '28px', color: '#000', strokeWidth: 2.5 }} />
                         </div>
-                        <span className="text-[10px] font-medium">Alerts</span>
                     </Link>
-                    <Link href="/profile" className="flex flex-col items-center gap-1" style={{ color: '#A0A0A0' }}>
-                        <User className="w-6 h-6" />
-                        <span className="text-[10px] font-medium">Profile</span>
+                    <Link href="/notifications" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', textDecoration: 'none' }}>
+                        <Bell style={{ width: '24px', height: '24px', color: '#666' }} />
+                        <span style={{ fontSize: '10px', color: '#666' }}>Activity</span>
+                    </Link>
+                    <Link href="/profile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', textDecoration: 'none' }}>
+                        <User style={{ width: '24px', height: '24px', color: '#666' }} />
+                        <span style={{ fontSize: '10px', color: '#666' }}>Profile</span>
                     </Link>
                 </div>
             </nav>
