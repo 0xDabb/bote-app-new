@@ -41,25 +41,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
             // Check if we're in a Farcaster frame context
             if (typeof window !== 'undefined') {
-                // Create timeout promise (10 seconds for SDK initialization)
+                // IMMEDIATELY call ready - don't wait for anything
+                // This is critical for Warpcast PC to dismiss splash screen
+                try {
+                    sdk.actions.ready()
+                    console.log('Farcaster SDK ready called immediately')
+                } catch (e) {
+                    console.warn('Failed to call ready immediately:', e)
+                }
+
+                // Create shorter timeout (3 seconds for faster fallback)
                 const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('SDK initialization timeout')), 10000)
+                    setTimeout(() => reject(new Error('SDK initialization timeout')), 3000)
                 )
 
                 try {
-                    // Call ready with timeout protection
-                    await Promise.race([
-                        sdk.actions.ready(),
-                        timeoutPromise
-                    ])
-                    console.log('Farcaster SDK ready called')
-
-                    // Get context with timeout protection
+                    // Try to get context with timeout protection
                     const contextPromise = sdk.context
                     const context: any = await Promise.race([
                         contextPromise,
                         new Promise((_, reject) =>
-                            setTimeout(() => reject(new Error('SDK context timeout')), 5000)
+                            setTimeout(() => reject(new Error('SDK context timeout')), 2000)
                         )
                     ])
 
@@ -91,6 +93,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
                     console.warn('SDK initialization failed or timed out:', sdkError)
                     // SDK failed, but app should still work as normal website
                     setIsInFrame(false)
+                    // Call ready again as fallback
+                    try {
+                        sdk.actions.ready()
+                    } catch (e) {
+                        // Ignore
+                    }
                 }
             }
         } catch (error) {
