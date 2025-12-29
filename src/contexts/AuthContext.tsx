@@ -41,31 +41,56 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
             // Check if we're in a Farcaster frame context
             if (typeof window !== 'undefined') {
-                // Call ready immediately
-                await sdk.actions.ready()
-                console.log('Farcaster SDK ready called')
+                // Create timeout promise (10 seconds for SDK initialization)
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('SDK initialization timeout')), 10000)
+                )
 
-                const context = await sdk.context
+                try {
+                    // Call ready with timeout protection
+                    await Promise.race([
+                        sdk.actions.ready(),
+                        timeoutPromise
+                    ])
+                    console.log('Farcaster SDK ready called')
 
-                if (context?.user) {
-                    setIsInFrame(true)
+                    // Get context with timeout protection
+                    const contextPromise = sdk.context
+                    const context: any = await Promise.race([
+                        contextPromise,
+                        new Promise((_, reject) =>
+                            setTimeout(() => reject(new Error('SDK context timeout')), 5000)
+                        )
+                    ])
 
-                    // We have a Farcaster user, authenticate with our backend
-                    const response = await fetch('/api/auth/farcaster', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            fid: context.user.fid,
-                            username: context.user.username || `fid:${context.user.fid}`,
-                            displayName: context.user.displayName,
-                            avatarUrl: context.user.pfpUrl,
-                        }),
-                    })
+                    console.log('Farcaster SDK context:', context)
 
-                    if (response.ok) {
-                        const data = await response.json()
-                        setUser(data.user)
+                    if (context?.user) {
+                        setIsInFrame(true)
+
+                        // We have a Farcaster user, authenticate with our backend
+                        const response = await fetch('/api/auth/farcaster', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                fid: context.user.fid,
+                                username: context.user.username || `fid:${context.user.fid}`,
+                                displayName: context.user.displayName,
+                                avatarUrl: context.user.pfpUrl,
+                            }),
+                        })
+
+                        if (response.ok) {
+                            const data = await response.json()
+                            setUser(data.user)
+                        }
+                    } else {
+                        console.log('No Farcaster user in context')
                     }
+                } catch (sdkError) {
+                    console.warn('SDK initialization failed or timed out:', sdkError)
+                    // SDK failed, but app should still work as normal website
+                    setIsInFrame(false)
                 }
             }
         } catch (error) {
