@@ -155,7 +155,130 @@ async function main() {
         console.log(`   ✅ User: @${userData.username}`)
     }
 
-    console.log('\n✨ Seeding completed! (Categories + Admin User + Sample Users ready)')
+    // 5. Create Sample Projects
+    console.log('📦 Creating sample projects...')
+
+    // Get category IDs
+    const saasCategory = await prisma.category.findUnique({ where: { slug: 'saas' } })
+    const aiCategory = await prisma.category.findUnique({ where: { slug: 'ai-tools' } })
+    const cryptoCategory = await prisma.category.findUnique({ where: { slug: 'crypto' } })
+    const socialCategory = await prisma.category.findUnique({ where: { slug: 'social' } })
+    const devtoolsCategory = await prisma.category.findUnique({ where: { slug: 'devtools' } })
+    const web3Category = await prisma.category.findUnique({ where: { slug: 'web3' } })
+
+    // Get user IDs
+    const vitalik = await prisma.user.findUnique({ where: { username: 'vitalik' } })
+    const dwr = await prisma.user.findUnique({ where: { username: 'dwr' } })
+    const jesse = await prisma.user.findUnique({ where: { username: 'jessepollak' } })
+    const horsefacts = await prisma.user.findUnique({ where: { username: 'horsefacts' } })
+    const linda = await prisma.user.findUnique({ where: { username: 'linda' } })
+
+    if (vitalik && dwr && jesse && horsefacts && linda &&
+        saasCategory && aiCategory && cryptoCategory && socialCategory && devtoolsCategory && web3Category) {
+
+        const sampleProjects = [
+            {
+                name: 'Warpcast',
+                tagline: 'The best way to use Farcaster',
+                description: 'Warpcast is a Farcaster client that makes it easy to connect with friends and discover new content on the decentralized social network.',
+                websiteUrl: 'https://warpcast.com',
+                logoImage: 'https://pbs.twimg.com/profile_images/1545121625791209473/Qk3LtAVl_400x400.jpg',
+                coverImage: 'https://cdn.prod.website-files.com/65a47c51cd9e4fdda35e76f0/65a9f36db7f0ce8c4c0a3f82_warpcast-og.jpg',
+                upvoteCount: 4250,
+                featured: true,
+                creatorId: dwr.id,
+                categoryId: socialCategory.id
+            },
+            {
+                name: 'Base',
+                tagline: 'The secure, low-cost, builder-friendly Ethereum L2',
+                description: 'Base is an Ethereum L2 incubated by Coinbase, built to bring the next billion users onchain with security, low costs, and easy developer experience.',
+                websiteUrl: 'https://base.org',
+                logoImage: 'https://pbs.twimg.com/profile_images/1720141771063173120/bslJRV6N_400x400.jpg',
+                upvoteCount: 5800,
+                featured: true,
+                creatorId: jesse.id,
+                categoryId: cryptoCategory.id
+            },
+            {
+                name: 'Farcaster Frames',
+                tagline: 'Interactive mini-apps in your feed',
+                description: 'Build interactive experiences that run directly in Farcaster feeds. Create polls, games, NFT mints, and more.',
+                websiteUrl: 'https://docs.farcaster.xyz/frames',
+                logoImage: 'https://docs.farcaster.xyz/logo.png',
+                upvoteCount: 3100,
+                creatorId: dwr.id,
+                categoryId: devtoolsCategory.id
+            },
+            {
+                name: 'Paragraph',
+                tagline: 'Web3 native newsletter platform',
+                description: 'Create and monetize newsletters on the blockchain. Own your audience, get paid in crypto.',
+                websiteUrl: 'https://paragraph.xyz',
+                logoImage: 'https://pbs.twimg.com/profile_images/1567891279571529728/xEkiM4dO_400x400.jpg',
+                upvoteCount: 1450,
+                creatorId: linda.id,
+                categoryId: saasCategory.id
+            },
+            {
+                name: 'Zora',
+                tagline: 'Create, collect, and trade NFTs',
+                description: 'A marketplace and protocol for NFT creators and collectors. Mint, collect, and earn on your creative works.',
+                websiteUrl: 'https://zora.co',
+                logoImage: 'https://pbs.twimg.com/profile_images/1713259821752479744/lYdKQrJI_400x400.jpg',
+                upvoteCount: 2340,
+                creatorId: vitalik.id,
+                categoryId: web3Category.id
+            },
+            {
+                name: 'Neynar',
+                tagline: 'Farcaster infrastructure and APIs',
+                description: 'Build on Farcaster with powerful APIs and infrastructure. The easiest way to integrate Farcaster into your app.',
+                websiteUrl: 'https://neynar.com',
+                logoImage: 'https://pbs.twimg.com/profile_images/1654567858979061760/8dKwkEXb_400x400.png',
+                upvoteCount: 1680,
+                creatorId: horsefacts.id,
+                categoryId: devtoolsCategory.id
+            },
+            {
+                name: 'Supercast',
+                tagline: 'Power user client for Farcaster',
+                description: 'Advanced Farcaster client with powerful features for power users. Multi-account support, advanced search, and more.',
+                websiteUrl: 'https://supercast.xyz',
+                logoImage: 'https://pbs.twimg.com/profile_images/1689389277667573760/OCZsqjpH_400x400.jpg',
+                upvoteCount: 892,
+                creatorId: horsefacts.id,
+                categoryId: socialCategory.id
+            },
+            {
+                name: 'Coinbase Wallet',
+                tagline: 'Your key to the world of crypto',
+                description: 'The easiest and most secure crypto wallet. Explore DeFi, NFTs, and web3 applications.',
+                websiteUrl: 'https://www.coinbase.com/wallet',
+                logoImage: 'https://pbs.twimg.com/profile_images/1746222993974140928/1Q-N2hOQ_400x400.jpg',
+                upvoteCount: 3420,
+                featured: true,
+                creatorId: jesse.id,
+                categoryId: cryptoCategory.id
+            }
+        ]
+
+        for (const project of sampleProjects) {
+            await prisma.project.upsert({
+                where: {
+                    id: project.name.toLowerCase().replace(/\s+/g, '-')
+                },
+                update: {},
+                create: {
+                    ...project,
+                    id: project.name.toLowerCase().replace(/\s+/g, '-')
+                }
+            })
+            console.log(`   ✅ Project: ${project.name}`)
+        }
+    }
+
+    console.log('\n✨ Seeding completed! (Categories + Users + Projects ready)')
 }
 
 main()
