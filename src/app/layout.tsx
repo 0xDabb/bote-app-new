@@ -29,14 +29,14 @@ export const metadata: Metadata = {
   other: {
     "fc:frame": JSON.stringify({
       version: "1",
-      imageUrl: "https://votebase.vercel.app/og-image.png",
+      imageUrl: "https://votebase0301.vercel.app/og-image.png",
       button: {
         title: "Open VoteBase",
         action: {
           type: "launch_frame",
           name: "VoteBase",
-          url: "https://votebase.vercel.app",
-          splashImageUrl: "https://votebase.vercel.app/icon.png",
+          url: "https://votebase0301.vercel.app",
+          splashImageUrl: "https://votebase0301.vercel.app/icon.png",
           splashBackgroundColor: "#0F0F0F"
         }
       }
