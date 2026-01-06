@@ -1,45 +1,56 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
-import sdk from '@farcaster/miniapp-sdk'
+import { useEffect } from 'react'
 
 export function FrameSDKInit() {
-    const callReady = useCallback(() => {
-        try {
-            sdk.actions.ready()
-            console.log('[VoteBase] SDK ready() called successfully')
-        } catch (e) {
-            console.error('[VoteBase] SDK ready() error:', e)
-        }
-    }, [])
-
     useEffect(() => {
-        // Call ready immediately on mount - don't wait for anything
-        console.log('[VoteBase] FrameSDKInit mounted, calling ready()...')
+        const initSDK = async () => {
+            try {
+                console.log('[VoteBase] Starting SDK initialization...')
 
-        // Call ready immediately
-        callReady()
+                // Dynamic import to avoid SSR issues
+                const { sdk } = await import('@farcaster/miniapp-sdk')
 
-        // Also call ready after a short delay as backup
-        const timer1 = setTimeout(callReady, 100)
-        const timer2 = setTimeout(callReady, 500)
-        const timer3 = setTimeout(callReady, 1000)
+                console.log('[VoteBase] SDK imported, calling ready()...')
 
-        // Try to get context in background (non-blocking)
-        sdk.context
-            .then(context => {
-                console.log('[VoteBase] SDK context received:', context)
-            })
-            .catch(err => {
-                console.log('[VoteBase] SDK context error (non-critical):', err)
-            })
+                // Call ready immediately
+                sdk.actions.ready()
+                console.log('[VoteBase] SDK ready() called!')
+
+                // Try to get context
+                try {
+                    const context = await sdk.context
+                    console.log('[VoteBase] Context:', context)
+                } catch (e) {
+                    console.log('[VoteBase] Context error (non-critical):', e)
+                }
+            } catch (error) {
+                console.error('[VoteBase] SDK init error:', error)
+
+                // Fallback: try postMessage directly
+                try {
+                    if (window.parent && window.parent !== window) {
+                        window.parent.postMessage({ type: 'fc:ready' }, '*')
+                        console.log('[VoteBase] Fallback: sent fc:ready via postMessage')
+                    }
+                } catch (e) {
+                    console.error('[VoteBase] postMessage fallback failed:', e)
+                }
+            }
+        }
+
+        // Call immediately
+        initSDK()
+
+        // Also call after delays as backup
+        const timer1 = setTimeout(initSDK, 200)
+        const timer2 = setTimeout(initSDK, 1000)
 
         return () => {
             clearTimeout(timer1)
             clearTimeout(timer2)
-            clearTimeout(timer3)
         }
-    }, [callReady])
+    }, [])
 
     return null
 }

@@ -90,15 +90,38 @@ export default function RootLayout({
         <Script id="farcaster-ready" strategy="beforeInteractive">
           {`
             (function() {
-              console.log('[VoteBase] Inline SDK ready check starting...');
-              if (window.parent && window.parent !== window) {
-                try {
-                  window.parent.postMessage({ type: 'fc:ready' }, '*');
-                  console.log('[VoteBase] Sent fc:ready to parent');
-                } catch(e) {
-                  console.log('[VoteBase] Could not post to parent:', e);
+              console.log('[VoteBase] Inline SDK ready starting...');
+              
+              function sendReady() {
+                if (window.parent && window.parent !== window) {
+                  try {
+                    // Try multiple message formats for compatibility
+                    window.parent.postMessage({ type: 'fc:ready' }, '*');
+                    window.parent.postMessage({ type: 'frame_ready' }, '*');
+                    window.parent.postMessage({ method: 'ready' }, '*');
+                    window.parent.postMessage('fc:ready', '*');
+                    console.log('[VoteBase] Sent ready messages to parent');
+                  } catch(e) {
+                    console.log('[VoteBase] postMessage error:', e);
+                  }
                 }
               }
+              
+              // Send immediately
+              sendReady();
+              
+              // Also send after DOM ready
+              if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', sendReady);
+              }
+              
+              // And after window load
+              window.addEventListener('load', sendReady);
+              
+              // And after short delays
+              setTimeout(sendReady, 100);
+              setTimeout(sendReady, 500);
+              setTimeout(sendReady, 1000);
             })();
           `}
         </Script>
